@@ -12,6 +12,6 @@ This folder includes field protocols (.pdf) used for this project. The Protocols
 
 This folder includes all data files (.csv) and R scripts (.Rmd) used for data analysis and figures in the manuscript. The Data and Scripts folder is organized into sub-folders containing both data files and R scripts associated with a particular category of crab response variables (e.g., "Size Distribution"). See Data&Scripts_README within the Data and Scripts folder for more details.
 
-
+## Contact
 For questions, or to request additional data and scripts, please contact Rebecca Cates: rebecca.cates@noaa.gov.
 
