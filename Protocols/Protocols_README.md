@@ -5,25 +5,14 @@ This folder contains lab protocols used for this project, divided into the follo
 ## [Crab Metrics](Crab Metrics)
 * [**"EckertLab_CrabMetricsProtocol.pdf"**](Crab Metrics/EckertLab_CrabMetricsProtocol.pdf)
 
-## [Ventilation](Ventilation)
-* [**"MLML_VentilationProtocol.pdf"**](Ventilation/MLML_VentilationProtocol.pdf)
+_Protocol for sampling crab assemblages along the west coast of Prince of Wales Island and nearby islands in Alaska, with sites ranging 93 km from the most southern site in Dunbar Inlet up to the most northern site in Naukati Bay. Sites were sampled from April to August during 2017–2020._
 
-_Protocol for setting up ventilation chambers, and taking video recordings to measure ventilation rate. This protocol comes from the Ichthyology Lab at Moss Landing Marine Laboratories._
+## [Sea Otter Density](Sea Otter Density)
+* [**"EckertLab_SeaOtterDensityProtocol.pdf"**](Sea Otter Density/EckertLab_SeaOtterDensityProtocol.pdf)
 
-## [Blood_Sampling](Blood_Sampling)
-* [**"LoganLab_HematocritProtocol.pdf"**](Blood_Sampling/LoganLab_HematocritProtocol.pdf)
+_Protocol for sampling sea otter density along the west coast of Prince of Wales Island and nearby islands in Alaska, with sites ranging 93 km from the most southern site in Dunbar Inlet up to the most northern site in Naukati Bay. Sites were sampled from April to August during 2017–2020._
 
-_Protocol for blood sampling via caudal ablation, as well as for taking hematocrit measurements. This protocol comes from the Logan Lab at California State University, Monterey Bay._
+## [Seagrass Biometrics](Seagrass Biometrics)
+* [**"EckertLab_EelgrassShootDensityProtocol.pdf"**](Seagrass Biometrics/EckertLab_EelgrassShootDensityProtocol.pdf)
 
-## [Tissue_Assays](Tissue_Assays)
-* [**"HIF_AssayProtocol_MyBioSource.pdf"**](Tissue_Assays/HIF_AssayProtocol_MyBioSource.pdf)
-
-_Protocol for Hypoxia-inducible Factor-1a ELISA assays using the "Fish Hypoxia Inducible Factor 1 Alpha (HIF1A) ELISA Kit" (cat. no. MBS015808) from MyBioSource. This protocol comes from [MyBioSource](https://www.mybiosource.com/hif-1alpha-fish-elisa-kits/hypoxia-inducible-factor-1-alpha/15808)._
-
-* [**"Lactate_AssayProtocol_EtonBio.pdf"**](Tissue_Assays/Lactate_AssayProtocol_EtonBio.pdf)
-
-_Protocol for L-Lactate assays using the "L-Lactate Assay Kit 1" (cat. no. 1200014002) from Eton Bioscience. This protocol comes from [Eton Bioscience](https://www.etonbio.com/products/metabolism%20assay%20kit/Assay%20kit/product.php?sku=120001).
-
-* [**"SOD_AssayProtocol_ThermoFisher.pdf"**](Tissue_Assays/SOD_AssayProtocol_ThermoFisher.pdf)
-
-_Protocol for superoxide dismutase (SOD) assays using the Invitrogen "Superoxide Dismutase (SOD) Colorimetric Activity Kit" (cat. no. EIASODC) from ThermoFisher Scientific. This protocol comes from [ThermoFisher Scientific](https://www.thermofisher.com/order/catalog/product/EIASODC).
+_Protocol for sampling eelgrass shoot density along the west coast of Prince of Wales Island and nearby islands in Alaska, with sites ranging 93 km from the most southern site in Dunbar Inlet up to the most northern site in Naukati Bay. Sites were sampled from April to August during 2017–2020._
