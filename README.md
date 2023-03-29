@@ -6,7 +6,7 @@ This repository is organized into the following folders:
 
 ## [Protocols](Protocols)
 
-This folder includes field protocols (.pdf) used for this project. The Protocols folder is divided into sub-folders based on the type of measurements/methods (e.g., "Sea Otter Density" or "Eelgrass Biometrics" or "Crab Metrics"). See Protocols_README within the Protocols folder for more details.
+This folder includes field protocols (.pdf) used for this project. The Protocols folder is divided into sub-folders based on the type of measurements/methods (e.g., "Sea Otter Density" or "Seagrass Biometrics" or "Crab Metrics"). See Protocols_README within the Protocols folder for more details.
 
 ## [Data and Scripts](Data&Scripts)
 
