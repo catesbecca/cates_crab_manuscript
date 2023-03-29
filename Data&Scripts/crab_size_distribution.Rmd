@@ -1,0 +1,694 @@
+---
+title: "CRAB_size"
+author: "Becca Cates"
+date: "1/14/2021"
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+This script is associated with the manuscript "Effect of Sea Otter (Enhydra lutris) Predation and Habitat Structure on Nearshore Crab Assemblages in Southeast Alaska" by Rebecca Cates, Wendel Raymond, Lia Domke, and Ginny Eckert. This manuscript has been adapted from R.Cates master's thesis at the University of Alaska Fairbanks College of Fisheries and Ocean Science and is associated with the large, interdisciplinary project "APECS".
+
+Crab size data were collected along the western coastline of Prince of Wales island with sites ranging 93 km from the most southern site in Dunbar Inlet up to the most northern site in Naukati Bay. Data was collected July to August, 2017-2020. Four strings with 2 pots each were were set at 21 different eelgrass sites. Pots soaked for ~24 hours before being pulled up to identify, measure and sex the contents of the pot. 
+
+In addition, sea otter density data was collected at these same sites from July through August, 2017-2020. Sea otters were counted via boat based surveys 2 nautical miles around the eelgrass sites. Multiple individuals with binoculars were stationed at all angles from a 22' dual engine North River as the boat proceeded at a max speed of 8 knots. Sea otters were noted on the app "INAVX" with waypoints. Density per site was calculated in the script "Sea_otter_impact_index".
+
+Goal of this script :
+1) Check for errors in data
+2) Check for accuracy of data type and fix if needed (e.g., factor, numeric, character)
+3) Analyze crab size distribution data for all species
+4) Visualize data
+
+
+#Load packages
+```{r warning=FALSE}
+library(tidyr)
+library(datasets)
+library(tidyverse)
+library(dplyr)
+library(MASS)
+library(stats)
+library(visreg)
+library(coefplot)
+library(ggplot2)
+library(sandwich)
+library(corrgram)
+library(ggpubr)
+library(AICcmodavg)
+library(geiger)
+library(ggpubr)
+library(viridis)
+library(car)
+```
+
+#Read in data
+```{r}
+crab_size<- read.csv("clean_crab_otter_size_data_all_years.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) #eventually source from KNB
+
+#otter density across all sites
+otter <- read.csv("D:/Documents/UAF/Data/Data 2019/Sea Otter/Otter_density_site_allyears.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
+
+```
+
+#Check for data errors
+```{r}
+#match sec_key of both data frames for join later on
+summary(crab_size)
+unique(crab_size$sec_key)
+
+#looks good
+
+```
+
+#Filter otter df for columns and rows we need
+```{r}
+otter <- 
+  otter %>% 
+  dplyr::select(sec_key, avg.density)
+
+crab_size<-
+  crab_size %>% 
+  dplyr::select(-c(otter_density))
+
+
+```
+
+#Join otter and crab dataframes by sec_key
+```{r}
+#Join otter and crab data
+crab <- left_join(crab_size, otter, by= "sec_key")
+#rename otter density column for clarity
+crab <- 
+ crab %>% 
+  rename(otter_density = avg.density)
+```
+
+#create sea otter presence column
+```{r}
+crab$so_presence <- NA
+crab$so_presence[crab$otter_density == 0] <- "Absent"
+crab$so_presence[crab$otter_density != 0] <- "Present"
+
+#convert to factor
+crab$so_presence <- as.factor(crab$so_presence)
+```
+
+#Create year column
+```{r}
+#year based off of sec_key identifier
+crab$year<- NA
+crab$year[1:120] <- 2020
+crab$year[121:381] <- 2017
+crab$year[382:490] <- 2018
+crab$year[491:754] <- 2019
+
+crab$year <- as.factor(crab$year)
+```
+
+# Filter for species from df
+# Filter out 2017, 2018 data due to size discrepency, for C.magister and C.gracilis
+# Filter out 2018, 2019 data for T. Cheiragonus because no crabs were caught at sites without sea otters, cant do a comparison
+```{r}
+crab_dun<-
+  crab%>% 
+  filter(pri.key %in% c("CRABDUN.19", "CRABDUN.20"))
+
+crab_gra<-
+  crab %>% 
+  filter(pri.key %in% c("CRABGRA.19", "CRABGRA.20"))
+
+crab_red <-
+  crab %>% 
+  filter(pri.key %in% c("CRABRR.17", "CRABRR.18", "CRABRR.19", "CRABRR.20"))
+
+crab_hel <-
+  crab %>% 
+  filter(pri.key %in% c("CRABHEL.17", "CRABHEL.20"))
+
+```
+
+#Density plots by species, carapace width density ~ sea otter presence
+#With female and male crab size at maturity lines (used for R. Cates defense)
+```{r}
+
+#CRABDUN Density plot with sea otter presence
+dun <- ggplot(data = crab_dun, aes(x = carapace_width_mm, fill = so_presence))+
+  geom_density() +
+  theme_classic()+
+  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), 0.7))+
+  geom_vline(aes(xintercept=174),
+            color="#042333ff", linetype="dashed", linewidth=1)+
+  geom_vline(aes(xintercept=95.13333),
+            color="#f9a242ff", linetype="dashed", linewidth=1)+
+   geom_vline(aes(xintercept=112),
+            color="blue", linewidth=2)+
+  geom_vline(aes(xintercept=106),
+            color="red", linewidth=2)+
+  # geom_vline(aes(xintercept=112),
+   #         color="blue", linetype="solid", size=1)+ #size at maturity males
+  # geom_vline(aes(xintercept=106),
+   #         color="red", linetype="solid", size=1)+ #size at maturity females
+  labs(title=expression("A)"),
+         fill= "Sea Otter Presence")+
+    theme(legend.position = "none")+
+  xlim(25,190)+
+  theme(text = element_text(size=20), axis.title.y=element_blank(), axis.title.x=element_blank())+
+  geom_label(fill="white", x=75, y=0.06, label="Present\nMean = 95.1\nn=15", color="black", size=3, show.legend = FALSE)+ #mean line
+  geom_label(fill="white", x=147, y=0.06, label="Absent\nMean = 174.0\nn=3", color="black", size=3, show.legend = FALSE) #mean line
+  #geom_text(x=35, y=0.084, label="Data: 2019-2020", color="black", size=4, show.legend = FALSE) #data from years
+
+#get legend
+#legend <-get_legend(dun)
+#remove legend from dun plot
+#dun <- dun + theme(legend.position="none")
+
+#view plot
+dun
+
+#CRABGRA Density plot with sea otter presence
+gra <- ggplot(data = crab_gra, aes(x = carapace_width_mm, fill = so_presence))+
+  geom_density() +
+  theme_classic()+
+  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), .7))+
+  geom_vline(aes(xintercept=83.22034),
+            color="#042333ff", linetype="dashed", size=1)+
+  geom_vline(aes(xintercept=65.47027),
+            color="#f9a242ff", linetype="dashed", size=1)+
+  geom_vline(aes(xintercept=77),
+            color="blue", size=2)+
+  geom_vline(aes(xintercept=48),
+            color="red", size=2)+
+  #   geom_vline(aes(xintercept=77),
+    #        color="blue", linetype="solid", size=1)+ #size at maturity males
+   #geom_vline(aes(xintercept=48),
+     #       color="red", linetype="solid", size=1)+ #size at maturity females
+  labs(title=expression("B)"),
+         fill= "Sea Otter Presence")+
+  xlim(25,120)+
+  theme(legend.position = "none")+
+  theme(text = element_text(size=20), axis.title.y=element_blank(), axis.title.x=element_blank())+
+  geom_label(fill="white", x=53, y=0.037, label="Present\nMean = 65.5\nn=186", color="black", size=3)+ #mean line
+  geom_label(fill="white", x=101, y=0.037, label="Absent\nMean = 83.2\nn=59", color="black", size=3) #mean line
+  geom_text(x=30.5, y=0.0455, label="Data: 2019-2020", color="black", size=4) #data from years
+
+#view plot
+gra
+
+#CRABRED Density plot with sea otter presence
+red <- ggplot(data = crab_red, aes(x = carapace_width_mm, fill = so_presence))+
+  geom_density() +
+  theme_classic()+
+  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), .7))+
+  geom_vline(aes(xintercept=129.0167),
+            color="#042333ff", linetype="dashed", size=1)+
+  geom_vline(aes(xintercept=115.8017),
+            color="#f9a242ff", linetype="dashed", size=1)+
+  geom_vline(aes(xintercept=65),
+            color="blue", size=2)+
+  geom_vline(aes(xintercept=64),
+            color="red", size=2)+
+ # geom_vline(aes(xintercept=65),
+  #          color="Black", linetype="solid", size=1)+ ###size at maturity males and females
+  labs(title=expression("C)"),
+         fill= "Sea Otter Presence")+
+  xlim(15,210)+
+  theme(legend.position = "none")+
+  theme(text = element_text(size=20), axis.title.y=element_blank(), axis.title.x=element_blank())+
+  geom_label(fill="white", x=70, y=0.012, label="Present\nMean = 115.8\nn=122", color="black", size=3)+ #mean line
+  geom_label(fill="white", x=182, y=0.012, label="Absent\nMean = 129.0\nn=120", color="black", size=3) #mean line
+  geom_text(x=27, y=0.0148, label="Data: 2017-2020", color="black", size=4) #data from years
+
+#view plot
+red
+
+#CRABHEL Density plot with sea otter presence
+hel <- ggplot(data = crab_hel, aes(x = carapace_width_mm, fill = so_presence))+
+  geom_density() +
+  theme_classic()+
+  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), 0.7))+
+  geom_vline(aes(xintercept=39.66667),
+            color="#042333ff", linetype="dashed", size=1)+
+  geom_vline(aes(xintercept=52.5),
+            color="#f9a242ff", linetype="dashed", size=1)+
+  geom_vline(aes(xintercept=34),
+            color="blue", size=2)+
+  geom_vline(aes(xintercept=36),
+            color="red", size=2)+
+ #    geom_vline(aes(xintercept=34),
+  #          color="blue", linetype="solid", size=1)+ #size at maturity males
+   #geom_vline(aes(xintercept=36),
+    #        color="red", linetype="solid", size=1)+ #size at maturity females
+  labs(title =expression("D)"),
+         fill= "Sea Otter Presence")+
+  xlim(-1,100)+
+  theme(legend.position = "none")+
+  theme(text = element_text(size=20), axis.title.y=element_blank(), axis.title.x=element_blank())+
+  geom_label(fill="white", x=25, y=0.03, label="Absent\nMean = 39.7\nn=3", color="black", size=3)+ #mean line
+  geom_label(fill="white", x=68, y=0.03, label="Present\nMean = 52.5\nn=82", color="black", size=3) #mean line
+  geom_text(x=5, y=0.036, label="data: 2017-2020", color="black", size=4) #data from years
+ 
+#view plot 
+hel
+
+#arrange all plots with legend (pulled from dun figure) at top
+size <- gridExtra::grid.arrange(dun, gra, red, hel,  ncol=2, nrow = 2, 
+             layout_matrix = rbind(c(1,2), c(3,4)),
+             widths = c(2.7, 2.7), heights = c(2.5, 2.5))
+
+annotate_figure(size, bottom = text_grob("Crab Carapace Width (mm)", size = 20),
+                left = text_grob("Density", rot=90, size = 20))
+
+#Annotated indvidual species figures
+#C. magister
+annotate_figure(dun, bottom = text_grob("Crab Carapace Width (mm)", size = 15),
+                left = text_grob("Density", rot=90, size = 15))
+#M. gracilis
+annotate_figure(gra, bottom = text_grob("Crab Carapace Width (mm)", size = 15),
+                left = text_grob("Density", rot=90, size = 15))
+#C. productus
+annotate_figure(red, bottom = text_grob("Crab Carapace Width (mm)", size = 15),
+                left = text_grob("Density", rot=90, size = 15))
+#T. cheiragonus
+annotate_figure(hel, bottom = text_grob("Crab Carapace Width (mm)", size = 15),
+                left = text_grob("Density", rot=90, size = 15))
+
+```
+
+#Density plots by species, carapace width density ~ sea otter presence
+#same chunk of code as above but no female and male crab size at maturity lines
+```{r}
+
+#CRABDUN Density plot with sea otter presence
+dun <- ggplot(data = crab_dun, aes(x = carapace_width_mm, fill = so_presence))+
+  geom_density() +
+  theme_classic()+
+  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), 0.7))+
+  geom_vline(aes(xintercept=174),
+            color="#042333ff", linetype="dashed", size=2)+
+  geom_vline(aes(xintercept=95.13333),
+            color="#f9a242ff", linetype="dashed", size=2)+
+  # geom_vline(aes(xintercept=112),
+   #         color="blue", linetype="solid", size=1)+ #size at maturity males
+  # geom_vline(aes(xintercept=106),
+   #         color="red", linetype="solid", size=1)+ #size at maturity females
+  labs(title=expression("A)"),
+         fill= "Sea Otter Presence")+
+    theme(legend.position = "none")+
+  xlim(25,190)+
+  theme(text = element_text(size=15), axis.title.y=element_blank(), axis.title.x=element_blank())+
+  geom_label(fill="white", x=70, y=0.06, label="Present\nMean = 95.1\nn=15", color="black", size=5, show.legend = FALSE)+ #mean line
+  geom_label(fill="white", x=142, y=0.06, label="Absent\nMean = 174.0\nn=3", color="black", size=5, show.legend = FALSE) #mean line
+  #geom_text(x=35, y=0.084, label="Data: 2019-2020", color="black", size=4, show.legend = FALSE) #data from years
+
+#get legend
+#legend <-get_legend(dun)
+#remove legend from dun plot
+#dun <- dun + theme(legend.position="none")
+
+#CRABGRA Density plot with sea otter presence
+gra <- ggplot(data = crab_gra, aes(x = carapace_width_mm, fill = so_presence))+
+  geom_density() +
+  theme_classic()+
+  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), .7))+
+  geom_vline(aes(xintercept=83.22034),
+            color="#042333ff", linetype="dashed", size=2)+
+  geom_vline(aes(xintercept=65.47027),
+            color="#f9a242ff", linetype="dashed", size=2)+
+  #   geom_vline(aes(xintercept=77),
+    #        color="blue", linetype="solid", size=1)+ #size at maturity males
+   #geom_vline(aes(xintercept=48),
+     #       color="red", linetype="solid", size=1)+ #size at maturity females
+  labs(title=expression("B)"),
+         fill= "Sea Otter Presence")+
+  xlim(25,120)+
+  theme(legend.position = "none")+
+  theme(text = element_text(size=15), axis.title.y=element_blank(), axis.title.x=element_blank())+
+  geom_label(fill="white", x=48, y=0.037, label="Present\nMean = 65.5\nn=186", color="black", size=5)+ #mean line
+  geom_label(fill="white", x=106, y=0.037, label="Absent\nMean = 83.2\nn=59", color="black", size=5) #mean line
+  geom_text(x=30.5, y=0.0455, label="Data: 2019-2020", color="black", size=4) #data from years
+
+#CRABRED Density plot with sea otter presence
+red <- ggplot(data = crab_red, aes(x = carapace_width_mm, fill = so_presence))+
+  geom_density() +
+  theme_classic()+
+  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), .7))+
+  geom_vline(aes(xintercept=129.0167),
+            color="#042333ff", linetype="dashed", size=2)+
+  geom_vline(aes(xintercept=115.8017),
+            color="#f9a242ff", linetype="dashed", size=2)+
+ # geom_vline(aes(xintercept=65),
+  #          color="Black", linetype="solid", size=1)+ ###size at maturity males and females
+  labs(title=expression("C)"),
+         fill= "Sea Otter Presence")+
+  xlim(15,210)+
+  theme(legend.position = "none")+
+  theme(text = element_text(size=15), axis.title.y=element_blank(), axis.title.x=element_blank())+
+  geom_label(fill="white", x=65, y=0.012, label="Present\nMean = 115.8\nn=122", color="black", size=5)+ #mean line
+  geom_label(fill="white", x=187, y=0.012, label="Absent\nMean = 129.0\nn=120", color="black", size=5) #mean line
+  geom_text(x=27, y=0.0148, label="Data: 2017-2020", color="black", size=4) #data from years
+
+#CRABHEL Density plot with sea otter presence
+hel <- ggplot(data = crab_hel, aes(x = carapace_width_mm, fill = so_presence))+
+  geom_density() +
+  theme_classic()+
+  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), 0.7))+
+  geom_vline(aes(xintercept=36.67),
+            color="#042333ff", linetype="dashed", size=2)+
+  geom_vline(aes(xintercept=52.5),
+            color="#f9a242ff", linetype="dashed", size=2)+
+ #    geom_vline(aes(xintercept=34),
+  #          color="blue", linetype="solid", size=1)+ #size at maturity males
+   #geom_vline(aes(xintercept=36),
+    #        color="red", linetype="solid", size=1)+ #size at maturity females
+  labs(title =expression("D)"),
+         fill= "Sea Otter Presence")+
+  xlim(-1,100)+
+  theme(legend.position = "none")+
+  theme(text = element_text(size=15), axis.title.y=element_blank(), axis.title.x=element_blank())+
+  geom_label(fill="white", x=20, y=0.03, label="Absent\nMean = 36.67\nn=3", color="black", size=5)+ #mean line
+  geom_label(fill="white", x=80, y=0.03, label="Present\nMean = 52.5\nn=82", color="black", size=5) #mean line
+  geom_text(x=5, y=0.036, label="data: 2017-2020", color="black", size=4) #data from years
+  
+
+#arrange all plots with legend(pulled from dun figure) at top
+size <- gridExtra::grid.arrange(dun, gra, red, hel,  ncol=2, nrow = 2, 
+             layout_matrix = rbind(c(1,2), c(3,4)),
+             widths = c(2.7, 2.7), heights = c(2.5, 2.5))
+
+annotate_figure(size, bottom = text_grob("Crab Carapace Width (mm)", size = 18),
+                left = text_grob("Density", rot=90, size = 18))
+
+#Indvidual Species Figures
+#C. magister
+annotate_figure(dun, bottom = text_grob("Crab Carapace Width (mm)", size = 25),
+                left = text_grob("Density", rot=90, size = 25))
+#M. gracilis
+annotate_figure(gra, bottom = text_grob("Crab Carapace Width (mm)", size = 25),
+                left = text_grob("Density", rot=90, size = 25))
+#C. productus
+annotate_figure(red, bottom = text_grob("Crab Carapace Width (mm)", size = 25),
+                left = text_grob("Density", rot=90, size = 25))
+#T. cheiragonus
+annotate_figure(hel, bottom = text_grob("Crab Carapace Width (mm)", size = 25),
+                left = text_grob("Density", rot=90, size = 25))
+
+```
+
+#Carapace width~density figure stats
+```{r}
+#C. magister mean
+mean(crab_dun$carapace_width_mm[crab_dun$so_presence == "Absent"]) #174
+mean(crab_dun$carapace_width_mm[crab_dun$so_presence == "Present"]) #95.13333
+table(crab_dun$so_presence) #absent=3, present = 15
+
+#C. gracilis mean
+mean(crab_gra$carapace_width_mm[crab_gra$so_presence == "Absent"]) #83.22034
+mean(crab_gra$carapace_width_mm[crab_gra$so_presence == "Present"], na.rm=TRUE) #65.47027
+table(crab_gra$so_presence) #absent=59, present = 186
+
+#C. productus mean
+mean(crab_red$carapace_width_mm[crab_red$so_presence == "Absent"]) #129.0167
+mean(crab_red$carapace_width_mm[crab_red$so_presence == "Present"], na.rm=TRUE) #115.8017
+table(crab_red$so_presence) #absent=120, present = 122
+
+#T. cheiragonus mean
+mean(crab_hel$carapace_width_mm[crab_hel$so_presence == "Absent"]) #39.67
+mean(crab_hel$carapace_width_mm[crab_hel$so_presence == "Present"]) #52.5
+table(crab_hel$so_presence) #absent=3, present = 52
+```
+
+#Two way ANOVA stats and Tukey Kramer post hoc
+```{r}
+
+#Shapiro Wilk
+shapiro.test(crab_dun$carapace_width_mm)
+shapiro.test(crab_gra$carapace_width_mm)
+shapiro.test(crab_red$carapace_width_mm)
+shapiro.test(crab_hel$carapace_width_mm)
+
+#Levene's
+leveneTest(carapace_width_mm ~ so_presence*year, data = crab_dun)
+leveneTest(carapace_width_mm ~ so_presence*year, data = crab_gra)
+leveneTest(carapace_width_mm ~ so_presence*year, data = crab_red)
+leveneTest(carapace_width_mm ~ so_presence*year, data = crab_hel)
+
+#Two way ANOVA, unbalanced design, type three sums of squares
+anova_dun <- aov(carapace_width_mm~so_presence*year, data=crab_dun)
+Anova(anova_dun, type = "III")
+
+anova_gra <- aov(carapace_width_mm~so_presence*year, data=crab_gra)
+Anova(anova_gra, type = "III")
+
+anova_red <- aov(carapace_width_mm~so_presence*year, data=crab_red)
+Anova(anova_red, type = "III")
+
+anova_hel <- aov(carapace_width_mm~so_presence*year, data=crab_hel)
+Anova(anova_hel, type = "III", singular.ok=TRUE)
+
+#Tukey Kramer post hoc
+print(TukeyHSD(anova_dun))
+print(TukeyHSD(anova_gra))
+print(TukeyHSD(anova_red))
+print(TukeyHSD(anova_hel))
+```
+
+#Kruskal-Wallis test for so presence and mann-whitney test for year
+```{r}
+#wilcox
+wilcox.test(carapace_width_mm ~ so_presence, data = crab_dun)
+wilcox.test(carapace_width_mm ~ year, data = crab_dun)
+
+wilcox.test(carapace_width_mm ~ so_presence, data = crab_gra)
+wilcox.test(carapace_width_mm ~ year, data = crab_gra)
+
+wilcox.test(carapace_width_mm ~ so_presence, data = crab_red)
+
+wilcox.test(carapace_width_mm ~ so_presence, data = crab_hel)
+
+#Kruskal with 
+kruskal.test(carapace_width_mm ~ year, data = crab_dun)
+pairwise.wilcox.test(crab_dun$carapace_width_mm, crab_dun$year,
+                 p.adjust.method = "BH")
+
+kruskal.test(carapace_width_mm ~ year, data = crab_gra)
+pairwise.wilcox.test(crab_gra$carapace_width_mm, crab_gra$year,
+                 p.adjust.method = "BH")
+
+kruskal.test(carapace_width_mm ~ year, data = crab_red)
+pairwise.wilcox.test(crab_red$carapace_width_mm, crab_red$year,
+                 p.adjust.method = "BH")
+
+kruskal.test(carapace_width_mm ~ year, data = crab_hel)
+pairwise.wilcox.test(crab_hel$carapace_width_mm, crab_hel$year,
+                 p.adjust.method = "BH")
+```
+
+#Density plots by species, carapace width density ~ year
+```{r}
+#CRABDUN Density plot with year
+dun <- ggplot(data = crab_dun, aes(x = carapace_width_mm, fill = year))+
+  geom_density() +
+  theme_classic()+
+  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), .7))+
+  geom_vline(aes(xintercept=106.625),
+            color="#042333ff", linetype="dashed", size=2)+
+    geom_vline(aes(xintercept=121.5),
+            color="#f9a242ff", linetype="dashed", size=2)+
+  labs(title=expression("A)"),
+         fill= "Year")+
+  xlim(25,190)+
+   theme(legend.position = "none",text = element_text(size=15),
+        axis.title.y=element_blank(), axis.title.x=element_blank())+
+   geom_label(fill="white", x=47, y=0.012, label="Mean\n2019 = 106.6, n = 16\n2020 = 121.5, n = 2", color="black", size=5) #mean line
+
+dun <- dun + theme(legend.position="none")
+
+#CRABGRA Density plot with year
+gra <- ggplot(data = crab_gra, aes(x = carapace_width_mm, fill = year))+
+  geom_density() +
+  theme_classic()+
+  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), .7))+
+  geom_vline(aes(xintercept=72.19886),
+            color="#042333ff", linetype="dashed", size=2)+
+    geom_vline(aes(xintercept=63.45),
+            color="#f9a242ff", linetype="dashed", size=2)+
+  labs(title=expression("B)"),
+         fill= "Year")+
+  xlim(25,120)+
+  theme(legend.position = "none",text = element_text(size=15),
+        axis.title.y=element_blank(), axis.title.x=element_blank())+
+    geom_label(fill="white", x=37, y=0.029, label="Mean\n2019 = 72.2, n = 177\n2020 = 63.5, n = 68", color="black", size=5) #mean line
+
+gra <- gra + theme(legend.position="none")
+
+
+#CRABRED Density plot with year
+red <- ggplot(data = crab_red, aes(x = carapace_width_mm, fill = year))+
+  geom_density() +
+  theme_classic()+
+  scale_fill_manual(values = alpha(c("#238A8DFF", "#55C667FF","#042333ff", "#f9a242ff"), .7))+
+    geom_vline(aes(xintercept=115.8614),
+            color="#238A8DFF", linetype="dashed", size=2)+
+    geom_vline(aes(xintercept=140.6923),
+            color="#55C667FF", linetype="dashed", size=2)+
+  geom_vline(aes(xintercept=116.8571),
+            color="#042333ff", linetype="dashed", size=2)+
+    geom_vline(aes(xintercept=122.875),
+            color="#f9a242ff", linetype="dashed", size=2)+
+    labs(title=expression("C)"),
+         fill= "Year")+
+  xlim(15,210)+
+  theme(legend.position = "none",text = element_text(size=15),
+        axis.title.y=element_blank(), axis.title.x=element_blank())+
+    geom_label(fill="white", x=42, y=0.021, label="Mean\n2017 = 116.0, n = 103\n2018 = 140.7, n = 52\n2019 = 116.9, n = 57\n2020 = 122.9, n = 32", color="black", size=5) #mean line
+
+#get legend
+legend <-get_legend(red)
+#remove legend from red plot
+red <- red + theme(legend.position="none")
+
+
+#CRABHEL Density plot with sea otter presence
+hel <- ggplot(data = crab_hel, aes(x = carapace_width_mm, fill = year))+
+  geom_density() +
+  theme_classic()+
+  scale_fill_manual(values = alpha(c("#238A8DFF", "#55C667FF","#042333ff", "#f9a242ff"), .7))+
+   geom_vline(aes(xintercept=48.27027),
+            color= "#238A8DFF", linetype="dashed", size=2)+
+  geom_vline(aes(xintercept=58.6),
+            color= "#55C667FF", linetype="dashed", size=2)+
+    labs(title=expression("D)"),
+         fill= "Year")+
+  xlim(-1,100)+
+  theme(legend.position = "none",text = element_text(size=15),
+        axis.title.y=element_blank(), axis.title.x=element_blank())+
+    geom_label(fill="white", x=11, y=0.040, label="Mean\n2017 = 48.3, n = 37\n2020 = 58.6, n = 18 ", color="black", size=5)
+
+#arrange all plots with legend(pulled from dun figure) at top
+size <- gridExtra::grid.arrange(dun, gra, red, hel,  ncol=2, nrow = 2, 
+             layout_matrix = rbind(c(1,2), c(3,4)),
+             widths = c(2.7, 2.7), heights = c(2.5, 2.5))
+
+size2 <- annotate_figure(size, bottom = text_grob("Crab Carapace Width (mm)", size = 18),left = text_grob("Density", rot=90, size = 18))
+
+
+size2
+
+#Indvidual Species Figures
+#C. magister
+dun <- gridExtra::grid.arrange(legend, dun,  ncol=1, nrow = 2,
+                               widths = c(2.7), heights = c(0.3, 2.5))
+annotate_figure(dun, bottom = text_grob("Crab Carapace Width (mm)", size = 15),
+                left = text_grob("Density", rot=90, size = 15))
+#M. gracilis
+gra <- gridExtra::grid.arrange(legend, gra,  ncol=1, nrow = 2,
+                               widths = c(2.7), heights = c(0.3, 2.5))
+annotate_figure(gra, bottom = text_grob("Crab Carapace Width (mm)", size = 15),
+                left = text_grob("Density", rot=90, size = 15))
+#C. productus
+red <- gridExtra::grid.arrange(legend, red,  ncol=1, nrow = 2,
+                               widths = c(2.7), heights = c(0.3, 2.5))
+annotate_figure(red, bottom = text_grob("Crab Carapace Width (mm)", size = 15),
+                left = text_grob("Density", rot=90, size = 15))
+#T. cheiragonus
+hel <- gridExtra::grid.arrange(legend, hel,  ncol=1, nrow = 2,
+                               widths = c(2.7), heights = c(0.3, 2.5))
+annotate_figure(hel, bottom = text_grob("Crab Carapace Width (mm)", size = 15),
+                left = text_grob("Density", rot=90, size = 15))
+```
+
+#Figure stats
+```{r}
+#Dungeness crab mean
+mean(crab_dun$carapace_width_mm[crab_dun$year == "2019"]) #106.625
+mean(crab_dun$carapace_width_mm[crab_dun$year == "2020"]) #121.5
+table(crab_dun$year) #2019=16, 2020 = 2
+
+#slender rock crab mean
+mean(crab_gra$carapace_width_mm[crab_gra$year == "2019"], na.rm=TRUE) #72.19886
+mean(crab_gra$carapace_width_mm[crab_gra$year == "2020"], na.rm=TRUE) #63.45588
+table(crab_gra$year) #2019=177, 2020 = 68
+
+#red rock crab mean
+mean(crab_red$carapace_width_mm[crab_red$year == "2017"]) #115.8614
+mean(crab_red$carapace_width_mm[crab_red$year == "2018"], na.rm=TRUE) #140.6923
+mean(crab_red$carapace_width_mm[crab_red$year == "2019"], na.rm=TRUE) #116.8571
+mean(crab_red$carapace_width_mm[crab_red$year == "2020"], na.rm=TRUE) #122.875
+table(crab_red$year) #2017=101, 2018=52, 2019=57, 2020=32
+
+#helmet crab mean
+mean(crab_hel$carapace_width_mm[crab_hel$year == "2017"]) #48.27027
+mean(crab_hel$carapace_width_mm[crab_hel$year == "2018"]) #44.875
+mean(crab_hel$carapace_width_mm[crab_hel$year == "2019"]) #61.78571
+mean(crab_hel$carapace_width_mm[crab_hel$year == "2020"]) #58.61111
+table(crab_hel$year) #2017=37, 2018=16, 2019=14, 2020=18
+
+
+```
+
+#Interaction Plots by species
+```{r}
+facet_dun = ggplot(crab_dun, aes(x= so_presence, y=carapace_width_mm, fill = so_presence)) + 
+  geom_boxplot(alpha = 1) + 
+  theme_classic()+
+  facet_grid(~year)+
+  theme(legend.position = "none",text = element_text(size=15),  axis.title.y=element_blank(), axis.title.x=element_blank())+
+   labs(x="Sea Otter Presence",
+        y= "Crab Carapace Width (mm)",
+        title =expression("A)"))+
+  scale_fill_brewer(palette="Paired")
+ 
+facet_dun
+
+facet_gra = ggplot(crab_gra, aes(x= so_presence, y=carapace_width_mm, fill = so_presence)) +
+  geom_boxplot() + 
+  theme_classic()+
+  facet_grid(~year)+
+ theme(legend.position = "none",text = element_text(size=15),  axis.title.y=element_blank(), axis.title.x=element_blank())+
+   labs(x="Sea Otter Presence",
+        y= "Crab Carapace Width (mm)",
+        title =expression("B)"))+
+    scale_fill_brewer(palette="Paired")
+
+ 
+facet_gra
+
+facet_red = ggplot(crab_red, aes(x= so_presence, y=carapace_width_mm, fill = so_presence)) +
+  geom_boxplot() + 
+  theme_classic()+
+  facet_grid(~year)+
+  theme(legend.position = "none",text = element_text(size=15),  axis.title.y=element_blank(), axis.title.x=element_blank())+
+   labs(x="Sea Otter Presence",
+        y= "Crab Carapace Width (mm)",
+        title =expression("C)"))+
+    scale_fill_brewer(palette="Paired")
+
+ 
+facet_red
+
+facet_hel = ggplot(crab_hel,aes(x= so_presence, y=carapace_width_mm, fill = so_presence)) +
+  geom_boxplot() + 
+  theme_classic()+
+  facet_grid(~year)+
+ theme(legend.position = "none",text = element_text(size=15),  axis.title.y=element_blank(), axis.title.x=element_blank())+
+   labs(x="Sea Otter Presence",
+        y= "Crab Carapace Width (mm)",
+        title =expression("D)"))+
+    scale_fill_brewer(palette="Paired")
+
+ 
+facet_hel
+
+facet <- gridExtra::grid.arrange(facet_dun, facet_gra, facet_red, facet_hel,  ncol=1, nrow = 4)
+
+facet2 <- annotate_figure(facet, bottom = text_grob("Sea otter presence", size = 15),left = text_grob("Crab carapace width(mm)", rot=90, size = 15))
+
+facet2
+```
+
