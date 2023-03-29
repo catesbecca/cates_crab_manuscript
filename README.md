@@ -4,12 +4,14 @@ This repository includes all data, protocols, and R scripts associated with the 
 
 This repository is organized into the following folders:
 
-Protocols
+## [Protocols](Protocols)
 
 This folder includes field protocols (.pdf) used for this project. The Protocols folder is divided into sub-folders based on the type of measurements/methods (e.g., "Sea Otter Density" or "Habitat Complexity" or "Crab Response Variables"). See Protocols_README within the Protocols folder for more details.
 
-Data and Scripts
+## [Data and Scripts](Data&Scripts)
 
 This folder includes all data files (.csv) and R scripts (.Rmd) used for data analysis and figures in the manuscript. The Data and Scripts folder is organized into sub-folders containing both data files and R scripts associated with a particular category of crab response variables (e.g., "Size Distribution"). See Data&Scripts_README within the Data and Scripts folder for more details.
-Contact For questions, or to request additional data and scripts, please contact Rebecca Cates: rebecca.cates@noaa.gov.
+
+
+For questions, or to request additional data and scripts, please contact Rebecca Cates: rebecca.cates@noaa.gov.
 
