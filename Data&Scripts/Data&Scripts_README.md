@@ -15,3 +15,17 @@ _csv file including BPUE data from Prince of Wales Island sites 2017-2020 includ
 * [**"crab_breakpoint_analysis.Rmd"**](CPUE_BPUE_Breakpoint/crab_breakpoint_analysis.Rmd)
 
 _R script for analyzing and plotting breakpoints of crab CPUE and BPUE against sea otter density for all crab species, sites and years
+
+## [Size_Distribution](Size_Distribution)
+
+* [**"crabsize_otterdensity_data.csv"**](Size_Distribution/crabsize_otterdensity_data.csv)
+
+_csv file including crab size data from Prince of Wales Island sites 2017-2020 including crab size, species code, sea otter density. sea otter presence, site code, and year
+
+* [**"otter_density.csv"**](Size_Distribution/otter_density.csv)
+
+_csv file including sea otter density data from Prince of Wales Island sites 2017-2020 
+
+* [**"crab_size_distribution.Rmd"**](Size_Distribution/crab_size_distribution.Rmd)
+
+_R script for analyzing and plotting size distribution of crab species against sea otter presence
