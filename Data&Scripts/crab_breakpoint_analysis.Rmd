@@ -1,0 +1,614 @@
+---
+title: "crab_catch_analysis"
+author: "Rebecca Cates"
+date: "6/8/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Load packages
+```{r warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(segmented)
+library(SiZer)
+library(ggplot2)
+library(ggpubr)
+library(MASS)
+library(cowplot)
+```
+
+#Read in crab data
+```{r}
+crab_cpue <- read.csv("crab_CPUE.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
+
+crab_bpue <- read.csv("crab_BPUE.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
+```
+
+#Filter by species for CPUE data analysis
+```{r}
+crab_dun <-
+  crab_cpue %>% 
+  filter(SpCode %in% c("CRABDUN"))
+
+crab_gra <-
+  crab_cpue %>% 
+  filter(SpCode %in% c("CRABGRA"))
+
+crab_red <-
+  crab_cpue %>% 
+  filter(SpCode %in% c("CRABRED"))
+
+crab_hel <-
+  crab_cpue %>% 
+  filter(SpCode %in% c("CRABHEL"))
+```
+
+#Segmented Regression with package "SiZer and untransformed data
+#using qplot to plot segments at breakpoint (knot)
+```{r}
+#C. magister=================================================
+#Save and run bootstrap segmented regression
+dun <- 
+  piecewise.linear(crab_dun$otter_density, crab_dun$cpue,
+                   middle = 1,
+                   CI = TRUE,
+                   bootstrap.samples = 1000,
+                   sig.level = 0.05)
+#View results
+dun
+str(dun)
+dun$model
+dun$CI
+
+#Save figure
+d.cpue <- 
+  qplot(otter_density, cpue, geom =
+          c('point','smooth'), method = 'lm', se = F, data = crab_dun) +
+  theme_classic()+
+  theme(axis.title = element_blank(), plot.title = element_text(size=15), axis.text = element_text(size=15))+
+  labs(title = "A)")+
+  ylim(0,5)
+#View figure
+d.cpue
+#C. gracilis=========================================================
+#Save and run bootstrap segmented regression
+gra <- piecewise.linear(crab_gra$otter_density,
+                        crab_gra$cpue,
+                        middle = 1,
+                        CI = TRUE,
+                        bootstrap.samples = 1000,
+                        sig.level = 0.05)
+#View results
+gra
+#Save figure
+g.cpue <- 
+  qplot(otter_density, cpue, geom = c('point', 'smooth'), method = 'lm', se = F, data = crab_gra) +
+  theme_classic()+
+  theme(axis.title = element_blank(), plot.title = element_text(size=15), axis.text = element_text(size=15))+
+  labs(title = "B)")+
+  ylim(0,30)
+#View figure
+g.cpue
+
+summary(g)
+g$coordinates
+#C. productus==========================================
+#Save and run bootstrap segmented regression
+red <- 
+  piecewise.linear(crab_red$otter_density, crab_red$cpue,
+                   middle = 0,
+                   CI = TRUE,
+                   bootstrap.samples = 1000,
+                   sig.level = 0.05)
+#View results
+red
+#Save figure
+r.cpue <- 
+  qplot(otter_density, cpue, group = otter_density >  1.62, geom = 
+          c('point', 'smooth'), method = 'lm', se = F, data = crab_red) +
+  theme_classic()+
+  annotate("rect", xmin = 0.07, xmax = 2.90, ymin = 0, ymax = 40,
+        alpha = .2)+
+  theme(axis.title = element_blank(), plot.title = element_text(size=15), axis.text = element_text(size=15))+
+  labs(title = "C)")+
+  geom_vline(xintercept = 1.62, linetype = "dashed", size=1.2, color= "black") +
+  ylim(0,10)
+
+#View figure
+r.cpue
+
+#T. cheiragonus====================================================
+#Run and save bootstrap segmented regression
+hel <- 
+  piecewise.linear(crab_hel$otter_density,crab_hel$cpue,
+                   middle = 1,
+                   CI = TRUE,
+                   bootstrap.samples = 1000,
+                   sig.level = 0.05)
+#View results
+hel
+#Save figure
+h.cpue <- 
+  qplot(otter_density, cpue, group = otter_density > 10.12, geom = 
+          c('point', 'smooth'), method = 'lm', se = F, data = crab_hel) +
+  theme_classic()+
+  annotate("rect", xmin = 6, xmax = 19.60, ymin = 0, ymax = 40,
+        alpha = .2)+
+  theme(axis.title = element_blank(), plot.title = element_text(size=15), axis.text = element_text(size=15))+
+  labs(title = "D)")+
+  geom_vline(xintercept = 10, linetype = "dashed", size=1.2, color= "black") +
+  ylim(0,10)
+
+#View figure
+h.cpue
+
+#arrange all plots 
+crab_cpue <- gridExtra::grid.arrange(d.cpue, g.cpue, r.cpue, h.cpue,  ncol=2, nrow = 2)
+
+annotate_figure(catch, top = text_grob("CPUE Breakpoint Estimates", size=20), bottom = text_grob(expression(Sea~otter~density~(ind.~km^-2)), size = 20),left = text_grob(expression(CPUE), rot=90, size = 20))
+```
+
+
+#DID NOT USE FOR THESIS
+#Segmented regression using "segmented" function
+#Instead of sizer, "segmented" requires that you manually look at the data and estimate a range where the breakpoint occurs
+#Other option: Do not provide estimates and use "psi=NA"
+```{r}
+#C. magister=================================================
+#Create a linear model
+dun.lm <- lm(cpue ~ otter_density, data = crab_dun)
+summary(dun.lm)
+
+#Visualize data to estimate breakpoint range
+ggplot(data = crab_dun, aes(x = otter_density, y= cpue))+
+  geom_point() +
+  geom_smooth(method="lm")+
+  labs(x= "Sea Otter Density", y= "CPUE", title=expression(paste(italic("C. magister"))))+
+  theme(text = element_text(size=15))
+
+#Run segmented regression on linear model providing estimates
+dun.seg <- segmented(dun.lm)
+
+#View results
+summary(dun.seg)
+#Get the breakpoints
+dun.seg$psi
+#get the slopes
+slope(dun.seg)
+# get the fitted data
+dun.fitted <- fitted(dun.seg)
+dun.model <- data.frame(Density = crab_dun$otter_density, cpue = dun.fitted)
+
+# plot the fitted model
+d <- ggplot(dun.model, aes(x =Density, y = cpue)) + 
+  geom_point() +
+  geom_line() +
+  geom_line(data = dun.model, aes(x = Density, y = cpue), colour = "tomato")
+dun.lines <- dun.seg$psi[, 2]
+
+d <- d + geom_vline(xintercept = dun.lines, linetype = "dashed")
+d
+#run F-test to test lm vs bp model
+dun_aov <- anova(dun.lm, dun.seg)
+dun_aov
+
+#C. gracilis=================================================
+#Create a linear model
+gra.lm <- lm(cpue ~ otter_density, data = crab_gra)
+summary(gra.lm)
+
+#Visualize data to estimate break point range
+ggplot(data = crab_gra, aes(x = otter_density, y= cpue))+
+  geom_point() +
+  geom_smooth(method="lm")+
+  labs(x= "Sea Otter Density", y= "cpue", title=expression(paste(italic("M. gracilis"))))+
+  theme(text = element_text(size=15))
+
+#Run segmented regression on linear model providing estimates
+gra.seg <- segmented(gra.lm)
+#View results
+summary(gra.seg)
+#Get the breakpoints
+gra.seg$psi
+#get the slopes
+slope(gra.seg)
+# get the fitted data
+gra.fitted <- fitted(gra.seg)
+gra.model <- data.frame(Density = crab_gra$otter_density, cpue = gra.fitted)
+
+# plot the fitted model
+g <- ggplot(gra.model, aes(x =Density, y = cpue)) + 
+  geom_point() +
+  geom_line() +
+  geom_line(data = gra.model, aes(x = Density, y = cpue), colour = "tomato")
+gra.lines <- gra.seg$psi[, 2]
+
+g <- g + geom_vline(xintercept = gra.lines, linetype = "dashed")
+g
+#run F-test to test lm vs bp model
+anova(gra.lm, gra.seg)
+
+#C. productus=================================================
+#Create a linear model
+red.lm <- lm(cpue ~ otter_density, data = crab_red)
+summary(red.lm)
+
+#Visualize data to esimate breakpoint range
+ggplot(data = crab_red, aes(x = otter_density, y= cpue))+
+  geom_point() +
+  geom_smooth(method="lm")+
+  labs(x= "Sea Otter Density", y= "cpue", title=expression(paste(italic("C. productus"))))+
+  theme(text = element_text(size=15))
+#breakpoint range appears to be between 0 and 5
+
+#Run segmented regression on linear model providing estimates
+red.seg <- segmented(red.lm)
+
+#View results
+summary(red.seg)
+#Get the breakpoints
+red.seg$psi
+#get the slopes
+slope(red.seg)
+# get the fitted data
+red.fitted <- fitted(red.seg)
+red.model <- data.frame(Density = crab_red$otter_density, cpue = red.fitted)
+
+# plot the fitted model
+r <- ggplot(red.model, aes(x =Density, y = cpue)) + 
+  geom_point() +
+  geom_line() +
+  geom_line(data = red.model, aes(x = Density, y = cpue), colour = "tomato")
+red.lines <- red.seg$psi[, 2]
+
+r <- r + geom_vline(xintercept = red.lines, linetype = "dashed")
+r
+#run F-test to test lm vs bp model
+anova(red.lm, red.seg)
+
+#T. cheiragonus=================================================
+#Create a linear model
+hel.lm <- lm(cpue ~ otter_density, data = crab_hel)
+summary(hel.lm)
+
+#Visualize data to esimate breakpoint range
+ggplot(data = crab_hel, aes(x = otter_density, y= cpue))+
+  geom_point() +
+  geom_smooth(method="lm")+
+  labs(x= "Sea Otter Density", y= "cpue", title=expression(paste(italic("T. cheiragonus"))))+
+  theme(text = element_text(size=15))
+#breakpoint range appears to be between 3 and 8
+
+#Run segmented regression on linear model providing estimates
+hel.seg <- segmented(hel.lm)
+#View results
+summary(hel.seg)
+#Get the breakpoints
+hel.seg$psi
+#get the slopes
+slope(hel.seg)
+# get the fitted data
+hel.fitted <- fitted(hel.seg)
+hel.model <- data.frame(Density = crab_hel$otter_density, cpue = hel.fitted)
+
+# plot the fitted model
+h <- ggplot(hel.model, aes(x =Density, y = cpue)) + 
+  geom_point() +
+  geom_line() +
+  geom_line(data = hel.model, aes(x = Density, y = cpue), colour = "tomato")
+hel.lines <- hel.seg$psi[, 2]
+
+h <- h + geom_vline(xintercept = hel.lines, linetype = "dashed")
+h
+#run F-test to test lm vs bp model
+anova(hel.lm, hel.seg)
+```
+
+#BREAK IN SCRIPT
+#We are switching from CPUE calculations to BPUE calculation
+
+#Filter for species 
+```{r}
+crab_dun <-
+  crab_bpue %>% 
+  filter(SpCode %in% c("CRABDUN"))
+
+crab_gra <-
+  crab_bpue %>% 
+  filter(SpCode %in% c("CRABGRA"))
+
+crab_red <-
+  crab_bpue %>% 
+  filter(SpCode %in% c("CRABRR"))
+
+crab_hel <-
+  crab_bpue %>% 
+  filter(SpCode %in% c("CRABHEL"))
+```
+
+#Segmented Regression with package "SiZer and untransformed data
+#using qplot to plot segments at breakpoint (knot)
+```{r}
+#C. magister=================================================
+#Save and run bootstrap segmented regression
+dun <- 
+  piecewise.linear(crab_dun$otter_density, crab_dun$bpue,
+                   middle = 1,
+                   CI = TRUE,
+                   bootstrap.samples = 1000,
+                   sig.level = 0.05)
+#View results
+dun
+str(dun)
+dun$model
+dun$CI
+
+#Save figure
+d.bpue <- 
+  qplot(otter_density, bpue, group = otter_density > 0.27, geom =
+          c('point','smooth'), method = 'lm', se = F, data = crab_dun) +
+  theme_classic()+
+  annotate("rect", xmin = 0.03, xmax = 16, ymin = 0, ymax = 1500,
+        alpha = .2)+
+  labs(title = "E)")+
+  theme(axis.title = element_blank(), plot.title = element_text(size=15), axis.text = element_text(size=15))+
+  geom_vline(xintercept = 0.27, linetype = "dashed", size=1.2, color= "black")+
+  ylim(0,150)
+#View figure
+d.bpue
+
+#M. gracilis=========================================================
+#Save and run bootstrap segmented regression
+gra <- piecewise.linear(crab_gra$otter_density,
+                        crab_gra$bpue,
+                        middle = 1,
+                        CI = TRUE,
+                        bootstrap.samples = 1000,
+                        sig.level = 0.05)
+#View results
+gra
+#Save figure
+g.bpue <- 
+  qplot(otter_density, bpue, geom = c('point', 'smooth'), method = 'lm', se = F, data = crab_gra) +
+  theme_classic()+
+  theme(axis.title = element_blank(), plot.title = element_text(size=15), axis.text = element_text(size=15))+
+  labs(title = "F)")+
+  ylim(0,1000)
+#View figure
+g.bpue
+
+#C. productus==========================================
+#Save and run bootstrap segmented regression
+red <- 
+  piecewise.linear(crab_red$otter_density, crab_red$bpue,
+                   middle = 0,
+                   CI = TRUE,
+                   bootstrap.samples = 1000,
+                   sig.level = 0.05)
+#View results
+red
+#Save figure
+r.bpue <- 
+  qplot(otter_density, bpue, group = otter_density >  1.48, geom = 
+          c('point', 'smooth'), method = 'lm', se = F, data = crab_red) +
+  theme_classic()+
+ # annotate("rect", xmin = 0.06, xmax = 2.81, ymin = 0, ymax = 1500,
+       # alpha = .2)+
+  theme(axis.title = element_blank(), plot.title = element_text(size=15), axis.text = element_text(size=15))+
+  labs(title = "G)")+
+  geom_vline(xintercept = 1.549, linetype = "dashed", size=1.2, color= "black") +
+  ylim(0,1500)
+
+#View figure
+r.bpue
+
+#T. cheiragonus====================================================
+#Run and save bootstrap segmented regression
+hel <- 
+  piecewise.linear(crab_hel$otter_density,crab_hel$bpue,
+                   middle = 1,
+                   CI = TRUE,
+                   bootstrap.samples = 1000,
+                   sig.level = 0.05)
+#View results
+print(hel)
+#Save figure
+h.bpue <- 
+  qplot(otter_density, bpue, group = otter_density > 9.38, geom = 
+          c('point', 'smooth'), method = 'lm', se = F, data = crab_hel) +
+  theme_classic()+
+  annotate("rect", xmin = 6.64, xmax = 17.24, ymin = 0, ymax = 1500,
+        alpha = .2)+
+  theme(axis.title = element_blank(), plot.title = element_text(size=15), axis.text = element_text(size=15))+
+  labs(title = "H)")+
+  geom_vline(xintercept = 8.623, linetype = "dashed", size=1.2, color= "black") +
+  ylim(0,300)
+
+#View figure
+h.bpue
+#arrange all plots 
+crab_bpue <- gridExtra::grid.arrange(d.bpue, g.bpue, r.bpue, h.bpue,  ncol=2, nrow = 2)
+
+annotate_figure(crab_bpue, bottom = text_grob(expression(Sea~otter~density~(ind.~km^-2)), size = 20),left = text_grob("Biomass (BPUE)", rot=90, size = 20))
+```
+
+#DID NOT USE FOR THESIS
+#Segmented regression using "segmented" function
+#Instead of sizer, "segmented" requires that you manually look at the data and estimate a range where the breakpoint occurs
+#Can also not provide estimates and use "psi=NA"
+```{r}
+#C. magister=================================================
+#Create a linear model
+dun.lm <- lm(bpue ~ otter_density, data = crab_dun)
+summary(dun.lm)
+
+#Visualize data to estimate breakpoint range
+ggplot(data = crab_dun, aes(x = otter_density, y= bpue))+
+  geom_point() +
+  geom_smooth(method="lm")+
+  labs(x= "Sea Otter Density", y= "Biomass", title=expression(paste(italic("C. magister"))))+
+  theme(text = element_text(size=15))
+#breakpoint range appears to be between 3 and 8
+
+#Run segmented regression on linear model providing estimates
+dun.seg <- segmented(dun.lm)
+
+#View results
+summary(dun.seg)
+#Get the breakpoints
+dun.seg$psi
+#get the slopes
+slope(dun.seg)
+# get the fitted data
+dun.fitted <- fitted(dun.seg)
+dun.model <- data.frame(Density = crab_dun$otter_density, Biomass = dun.fitted)
+
+# plot the fitted model
+d <- ggplot(dun.model, aes(x =Density, y = Biomass)) + 
+  geom_point() +
+  geom_line() +
+  geom_line(data = dun.model, aes(x = Density, y = Biomass), colour = "tomato")
+dun.lines <- dun.seg$psi[, 2]
+
+d <- d + geom_vline(xintercept = dun.lines, linetype = "dashed")
+d
+#run F-test to test lm vs bp model
+anova(dun.lm, dun.seg)
+#M. gracilis=================================================
+#Create a linear model
+gra.lm <- lm(bpue ~ otter_density, data = crab_gra)
+summary(gra.lm)
+
+#Visualize data to esimate breakpoint range
+ggplot(data = crab_gra, aes(x = otter_density, y= bpue))+
+  geom_point() +
+  geom_smooth(method="lm")+
+  labs(x= "Sea Otter Density", y= "Biomass", title=expression(paste(italic("M. gracilis"))))+
+  theme(text = element_text(size=15))
+#breakpoint range appears to be between 5 and 15
+
+#Run segmented regression on linear model providing estimates
+gra.seg <- segmented(gra.lm)
+#View results
+summary(gra.seg)
+#Get the breakpoints
+gra.seg$psi
+#get the slopes
+slope(gra.seg)
+# get the fitted data
+gra.fitted <- fitted(gra.seg)
+gra.model <- data.frame(Density = crab_gra$otter_density, Biomass = gra.fitted)
+
+# plot the fitted model
+g <- ggplot(gra.model, aes(x =Density, y = Biomass)) + 
+  geom_point() +
+  geom_line() +
+  geom_line(data = gra.model, aes(x = Density, y = Biomass), colour = "tomato")
+gra.lines <- gra.seg$psi[, 2]
+
+g <- g + geom_vline(xintercept = gra.lines, linetype = "dashed")
+g
+
+crab_gra$second_seg <- pmax(0, crab_gra$otter_density-15.47)
+crab_gra[1:43,]
+
+# Fit the known change point model
+second_fit <- lm(bpue ~ otter_density + second_seg, data=crab_gra)
+summary(second_fit)
+
+#run F-test to test lm vs bp model
+anova(gra.lm, second_fit)
+#C. productus=================================================
+#Create a linear model
+red.lm <- lm(bpue ~ otter_density, data = crab_red)
+summary(red.lm)
+
+#Visualize data to esimate breakpoint range
+ggplot(data = crab_red, aes(x = otter_density, y= bpue))+
+  geom_point() +
+  geom_smooth(method="lm")+
+  labs(x= "Sea Otter Density", y= "Biomass", title=expression(paste(italic("C. productus"))))+
+  theme(text = element_text(size=15))
+#breakpoint range appears to be between 0 and 5
+
+#Run segmented regression on linear model providing estimates
+red.seg <- segmented(red.lm)
+#View results
+summary(red.seg)
+#Get the breakpoints
+red.seg$psi
+#get the slopes
+slope(red.seg)
+# get the fitted data
+red.fitted <- fitted(red.seg)
+red.model <- data.frame(Density = crab_red$otter_density, Biomass = red.fitted)
+
+# plot the fitted model
+r <- ggplot(red.model, aes(x =Density, y = Biomass)) + 
+  geom_point() +
+  geom_line() +
+  geom_line(data = red.model, aes(x = Density, y = Biomass), colour = "tomato")
+red.lines <- red.seg$psi[, 2]
+
+r <- r + geom_vline(xintercept = red.lines, linetype = "dashed")
+r
+#run F-test to test lm vs bp model
+anova(red.lm, red.seg)
+#T. cheiragonus=================================================
+#Create a linear model
+hel.lm <- lm(bpue ~ otter_density, data = crab_hel)
+summary(hel.lm)
+
+#Visualize data to esimate breakpoint range
+ggplot(data = crab_hel, aes(x = otter_density, y= bpue))+
+  geom_point() +
+  geom_smooth(method="lm")+
+  labs(x= "Sea Otter Density", y= "Biomass", title=expression(paste(italic("T. cheiragonus"))))+
+  theme(text = element_text(size=15))
+#breakpoint range appears to be between 3 and 8
+
+#Run segmented regression on linear model providing estimates
+hel.seg <- segmented(hel.lm)
+#View results
+summary(hel.seg)
+#Get the breakpoints
+hel.seg$psi
+#get the slopes
+slope(hel.seg)
+# get the fitted data
+hel.fitted <- fitted(hel.seg)
+hel.model <- data.frame(Density = crab_hel$otter_density, Biomass = hel.fitted)
+
+# plot the fitted model
+h <- ggplot(hel.model, aes(x =Density, y = Biomass)) + 
+  geom_point() +
+  geom_line() +
+  geom_line(data = hel.model, aes(x = Density, y = Biomass), colour = "tomato")
+hel.lines <- hel.seg$psi[, 2]
+
+h <- h + geom_vline(xintercept = hel.lines, linetype = "dashed")
+h
+#run F-test to test lm vs bp model
+anova(hel.lm, hel.seg)
+```
+
+#Arrange cpue and cpue plots together 
+```{r}
+crab_cpue <- gridExtra::grid.arrange(d.cpue, g.cpue, r.cpue, h.cpue, ncol=1, nrow = 4)
+crab_cpue <- annotate_figure(catch, left = text_grob("Crab abundance (CPUE)", rot=90, size = 15))
+crab_cpue
+
+crab_bpue <- gridExtra::grid.arrange(d.bpue, g.bpue, r.bpue, h.bpue,  ncol=1, nrow = 4)
+crab_bpue <- annotate_figure(mass, left = text_grob("Crab biomass (BPUE)", rot=90, size = 15))
+crab_bpue
+
+crab_cpue_bpue <-  gridExtra::grid.arrange(crab_cpue, crab_bpue,  ncol=2, nrow = 1)
+annotate_figure(crab_cpue_bpue, bottom = text_grob(expression(Sea~otter~density~(ind.~km^-2)), size = 15), top = text_grob(expression(Crab~CPUE~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Crab~BPUE), size = 15))
+```
+
