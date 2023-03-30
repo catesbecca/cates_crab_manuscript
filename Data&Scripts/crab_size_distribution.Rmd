@@ -49,10 +49,11 @@ library(car)
 
 #Read in data
 ```{r}
-crab_size<- read.csv("clean_crab_otter_size_data_all_years.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) #eventually source from KNB
+#Crab size data
+crab_size <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/clean_crab_otter_size_data_all_years.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
 
-#otter density across all sites
-otter <- read.csv("D:/Documents/UAF/Data/Data 2019/Sea Otter/Otter_density_site_allyears.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
+#Sea otter density data
+otter <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Otter_density_site_allyears.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
 
 ```
 
