@@ -6,6 +6,17 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
+This script is associated with the manuscript "Effect of Sea Otter (Enhydra lutris) Predation and Habitat Structure on Nearshore Crab Assemblages in Southeast Alaska" by Rebecca Cates, Wendel Raymond, Lia Domke, and Ginny Eckert. This manuscript has been adapted from R.Cates master's thesis at the University of Alaska Fairbanks College of Fisheries and Ocean Science and is associated with the large, interdisciplinary project "APECS".
+
+Crab abundance data were collected along the western coastline of Prince of Wales island with sites ranging 93 km from the most southern site in Dunbar Inlet up to the most northern site in Naukati Bay. Data was collected July to August, 2017-2020. Four strings with 2 pots each were were set at 21 different eelgrass sites. Pots soaked for ~24 hours before being pulled up to identify, measure and sex the contents of the pot. Abundance data was transformed to cpue and bpue data based on pot effort.
+
+In addition, sea otter density data was collected at these same sites from July through August, 2017-2020. Sea otters were counted via boat based surveys 2 nautical miles around the eelgrass sites. Multiple individuals with binoculars were stationed at all angles from a 22' dual engine North River as the boat proceeded at a max speed of 8 knots. Sea otters were noted on the app "INAVX" with waypoints. Density per site was calculated in the script "Sea_otter_impact_index".
+
+Goal of this script :
+1) Check for errors in data
+2) Check for accuracy of data type and fix if needed (e.g., factor, numeric, character)
+3) Analyze crab cpue and bpue data for all species
+4) Visualize data
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
