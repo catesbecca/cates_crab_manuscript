@@ -67,7 +67,7 @@ unique(crab_size$sec_key)
 
 ```
 
-#Filter otter df for columns and rows we need
+#Filter sea otter df for columns and rows we need
 ```{r}
 otter <- 
   otter %>% 
@@ -114,7 +114,7 @@ crab$year <- as.factor(crab$year)
 
 # Filter for species from df
 # Filter out 2017, 2018 data due to size discrepency, for C.magister and C.gracilis
-# Filter out 2018, 2019 data for T. Cheiragonus because no crabs were caught at sites without sea otters, cant do a comparison
+# Filter out 2018, 2019 data for T. Cheiragonus because no crabs were caught at sites without sea otters, can't do a comparison
 ```{r}
 crab_dun<-
   crab%>% 
@@ -135,154 +135,6 @@ crab_hel <-
 ```
 
 #Density plots by species, carapace width density ~ sea otter presence
-#With female and male crab size at maturity lines (used for R. Cates defense)
-```{r}
-
-#CRABDUN Density plot with sea otter presence
-dun <- ggplot(data = crab_dun, aes(x = carapace_width_mm, fill = so_presence))+
-  geom_density() +
-  theme_classic()+
-  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), 0.7))+
-  geom_vline(aes(xintercept=174),
-            color="#042333ff", linetype="dashed", linewidth=1)+
-  geom_vline(aes(xintercept=95.13333),
-            color="#f9a242ff", linetype="dashed", linewidth=1)+
-   geom_vline(aes(xintercept=112),
-            color="blue", linewidth=2)+
-  geom_vline(aes(xintercept=106),
-            color="red", linewidth=2)+
-  # geom_vline(aes(xintercept=112),
-   #         color="blue", linetype="solid", size=1)+ #size at maturity males
-  # geom_vline(aes(xintercept=106),
-   #         color="red", linetype="solid", size=1)+ #size at maturity females
-  labs(title=expression("A)"),
-         fill= "Sea Otter Presence")+
-    theme(legend.position = "none")+
-  xlim(25,190)+
-  theme(text = element_text(size=20), axis.title.y=element_blank(), axis.title.x=element_blank())+
-  geom_label(fill="white", x=75, y=0.06, label="Present\nMean = 95.1\nn=15", color="black", size=3, show.legend = FALSE)+ #mean line
-  geom_label(fill="white", x=147, y=0.06, label="Absent\nMean = 174.0\nn=3", color="black", size=3, show.legend = FALSE) #mean line
-  #geom_text(x=35, y=0.084, label="Data: 2019-2020", color="black", size=4, show.legend = FALSE) #data from years
-
-#get legend
-#legend <-get_legend(dun)
-#remove legend from dun plot
-#dun <- dun + theme(legend.position="none")
-
-#view plot
-dun
-
-#CRABGRA Density plot with sea otter presence
-gra <- ggplot(data = crab_gra, aes(x = carapace_width_mm, fill = so_presence))+
-  geom_density() +
-  theme_classic()+
-  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), .7))+
-  geom_vline(aes(xintercept=83.22034),
-            color="#042333ff", linetype="dashed", size=1)+
-  geom_vline(aes(xintercept=65.47027),
-            color="#f9a242ff", linetype="dashed", size=1)+
-  geom_vline(aes(xintercept=77),
-            color="blue", size=2)+
-  geom_vline(aes(xintercept=48),
-            color="red", size=2)+
-  #   geom_vline(aes(xintercept=77),
-    #        color="blue", linetype="solid", size=1)+ #size at maturity males
-   #geom_vline(aes(xintercept=48),
-     #       color="red", linetype="solid", size=1)+ #size at maturity females
-  labs(title=expression("B)"),
-         fill= "Sea Otter Presence")+
-  xlim(25,120)+
-  theme(legend.position = "none")+
-  theme(text = element_text(size=20), axis.title.y=element_blank(), axis.title.x=element_blank())+
-  geom_label(fill="white", x=53, y=0.037, label="Present\nMean = 65.5\nn=186", color="black", size=3)+ #mean line
-  geom_label(fill="white", x=101, y=0.037, label="Absent\nMean = 83.2\nn=59", color="black", size=3) #mean line
-  geom_text(x=30.5, y=0.0455, label="Data: 2019-2020", color="black", size=4) #data from years
-
-#view plot
-gra
-
-#CRABRED Density plot with sea otter presence
-red <- ggplot(data = crab_red, aes(x = carapace_width_mm, fill = so_presence))+
-  geom_density() +
-  theme_classic()+
-  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), .7))+
-  geom_vline(aes(xintercept=129.0167),
-            color="#042333ff", linetype="dashed", size=1)+
-  geom_vline(aes(xintercept=115.8017),
-            color="#f9a242ff", linetype="dashed", size=1)+
-  geom_vline(aes(xintercept=65),
-            color="blue", size=2)+
-  geom_vline(aes(xintercept=64),
-            color="red", size=2)+
- # geom_vline(aes(xintercept=65),
-  #          color="Black", linetype="solid", size=1)+ ###size at maturity males and females
-  labs(title=expression("C)"),
-         fill= "Sea Otter Presence")+
-  xlim(15,210)+
-  theme(legend.position = "none")+
-  theme(text = element_text(size=20), axis.title.y=element_blank(), axis.title.x=element_blank())+
-  geom_label(fill="white", x=70, y=0.012, label="Present\nMean = 115.8\nn=122", color="black", size=3)+ #mean line
-  geom_label(fill="white", x=182, y=0.012, label="Absent\nMean = 129.0\nn=120", color="black", size=3) #mean line
-  geom_text(x=27, y=0.0148, label="Data: 2017-2020", color="black", size=4) #data from years
-
-#view plot
-red
-
-#CRABHEL Density plot with sea otter presence
-hel <- ggplot(data = crab_hel, aes(x = carapace_width_mm, fill = so_presence))+
-  geom_density() +
-  theme_classic()+
-  scale_fill_manual(values = alpha(c("#042333ff", "#f9a242ff"), 0.7))+
-  geom_vline(aes(xintercept=39.66667),
-            color="#042333ff", linetype="dashed", size=1)+
-  geom_vline(aes(xintercept=52.5),
-            color="#f9a242ff", linetype="dashed", size=1)+
-  geom_vline(aes(xintercept=34),
-            color="blue", size=2)+
-  geom_vline(aes(xintercept=36),
-            color="red", size=2)+
- #    geom_vline(aes(xintercept=34),
-  #          color="blue", linetype="solid", size=1)+ #size at maturity males
-   #geom_vline(aes(xintercept=36),
-    #        color="red", linetype="solid", size=1)+ #size at maturity females
-  labs(title =expression("D)"),
-         fill= "Sea Otter Presence")+
-  xlim(-1,100)+
-  theme(legend.position = "none")+
-  theme(text = element_text(size=20), axis.title.y=element_blank(), axis.title.x=element_blank())+
-  geom_label(fill="white", x=25, y=0.03, label="Absent\nMean = 39.7\nn=3", color="black", size=3)+ #mean line
-  geom_label(fill="white", x=68, y=0.03, label="Present\nMean = 52.5\nn=82", color="black", size=3) #mean line
-  geom_text(x=5, y=0.036, label="data: 2017-2020", color="black", size=4) #data from years
- 
-#view plot 
-hel
-
-#arrange all plots with legend (pulled from dun figure) at top
-size <- gridExtra::grid.arrange(dun, gra, red, hel,  ncol=2, nrow = 2, 
-             layout_matrix = rbind(c(1,2), c(3,4)),
-             widths = c(2.7, 2.7), heights = c(2.5, 2.5))
-
-annotate_figure(size, bottom = text_grob("Crab Carapace Width (mm)", size = 20),
-                left = text_grob("Density", rot=90, size = 20))
-
-#Annotated indvidual species figures
-#C. magister
-annotate_figure(dun, bottom = text_grob("Crab Carapace Width (mm)", size = 15),
-                left = text_grob("Density", rot=90, size = 15))
-#M. gracilis
-annotate_figure(gra, bottom = text_grob("Crab Carapace Width (mm)", size = 15),
-                left = text_grob("Density", rot=90, size = 15))
-#C. productus
-annotate_figure(red, bottom = text_grob("Crab Carapace Width (mm)", size = 15),
-                left = text_grob("Density", rot=90, size = 15))
-#T. cheiragonus
-annotate_figure(hel, bottom = text_grob("Crab Carapace Width (mm)", size = 15),
-                left = text_grob("Density", rot=90, size = 15))
-
-```
-
-#Density plots by species, carapace width density ~ sea otter presence
-#same chunk of code as above but no female and male crab size at maturity lines
 ```{r}
 
 #CRABDUN Density plot with sea otter presence
