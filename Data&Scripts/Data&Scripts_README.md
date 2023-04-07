@@ -29,3 +29,5 @@ _csv file including sea otter density data from Prince of Wales Island sites 201
 * [**"crab_size_distribution.Rmd"**](Size_Distribution/crab_size_distribution.Rmd)
 
 _R script for analyzing and plotting size distribution of crab species against sea otter presence
+
+## [Crab_Abundance_Seagrass](Crab_Abundance_Seagrass)
