@@ -36,7 +36,7 @@ library(cowplot)
 
 #Read in crab data
 ```{r}
-crab_cpue <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/crab_BPUE.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
+crab_cpue <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/crab_CPUE.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
 
 crab_bpue <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/crab_BPUE.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
 ```
