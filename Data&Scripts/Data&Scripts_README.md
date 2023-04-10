@@ -31,3 +31,19 @@ _csv file including sea otter density data from Prince of Wales Island sites 201
 _R script for analyzing and plotting size distribution of crab species against sea otter presence
 
 ## [Crab_Abundance_Seagrass](Crab_Abundance_Seagrass)
+* [**"crab_dun.csv"**](Crab_Abundance_Seagrass/crab_dun.csv)
+
+_csv file including C. magister abundance data from Prince of Wales Island sites 2017-2020 including site catch, sea otter density, site code, and year
+
+* [**"crab_gra.csv"**](Crab_Abundance_Seagrass/crab_gra.csv)
+
+_csv file including C. gracilis abundance data from Prince of Wales Island sites 2017-2020 including site catch, sea otter density, site code, and year
+
+* [**"crab_red.csv"**](Crab_Abundance_Seagrass/crab_red.csv)
+
+_csv file including C. productus abundance data from Prince of Wales Island sites 2017-2020 including site catch, sea otter density, site code, and year
+
+* [**"crab_hel.csv"**](Crab_Abundance_Seagrass/crab_hel.csv)
+
+_csv file including T. cheiragonus abundance data from Prince of Wales Island sites 2017-2020 including site catch, sea otter density, site code, and year
+
