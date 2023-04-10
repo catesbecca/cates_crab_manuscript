@@ -42,35 +42,48 @@ library(grid)
 
 #Read in crab data and shoot density data
 ```{r}
-crab_dun <- read.csv("crab_dun_abundance.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
-crab_gra <- read.csv("crab_gra_abundance.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
-crab_red <- read.csv("crab_red_abundance.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
-crab_hel <- read.csv("crab_hel_abundance.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
+crab_dun <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Crab_Abundance_Seagrass/crab_dun_abundance.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
+crab_gra <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Crab_Abundance_Seagrass/crab_gra_abundance.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
+crab_red <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Crab_Abundance_Seagrass/crab_red_abundance.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
+crab_hel <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Crab_Abundance_Seagrass/crab_hel_abundance.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
 
-shoot <- read.csv("shoot_density.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) #eventually source from KNB
+shoot <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Crab_Abundance_Seagrass/shoot_density.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) #eventually source from KNB
 ```
 
-#sum site_catch, from all pots, for crab data
+#sum site_catch, from all pots, for crab species data
 ```{r}
 crab_dun <-
   crab_dun %>% 
+  dplyr::select(-c("pot")) %>% 
   group_by(sec_key) %>% 
-  mutate(site_catch = sum(pot_catch))
+  mutate(site_catch = sum(pot_catch)) %>% 
+  distinct(sec_key, .keep_all = TRUE) %>%
+  dplyr::select(-c("pot_catch"))  
+
 
 crab_gra <-
   crab_gra %>% 
+  dplyr::select(-c("pot")) %>% 
   group_by(sec_key) %>% 
-  mutate(site_catch = sum(pot_catch))
+  mutate(site_catch = sum(pot_catch)) %>% 
+  distinct(sec_key, .keep_all = TRUE) %>%
+  dplyr::select(-c("pot_catch"))  
 
 crab_red <-
   crab_red %>% 
+  dplyr::select(-c("pot")) %>% 
   group_by(sec_key) %>% 
-  mutate(site_catch = sum(pot_catch))
+  mutate(site_catch = sum(pot_catch)) %>% 
+  distinct(sec_key, .keep_all = TRUE) %>%
+  dplyr::select(-c("pot_catch"))  
 
 crab_hel <-
   crab_hel %>% 
+  dplyr::select(-c("pot")) %>% 
   group_by(sec_key) %>% 
-  mutate(site_catch = sum(pot_catch))
+  mutate(site_catch = sum(pot_catch)) %>% 
+  distinct(sec_key, .keep_all = TRUE) %>%
+  dplyr::select(-c("pot_catch"))  
 
 ```
 
@@ -81,7 +94,7 @@ shoot <-
   mutate(eg_shoot_msq = shoot_dens*4)
 ```
 
-#Join crab data with catch data and clean
+#Join crab data with shoot data and clean
 ```{r}
 #join
 crab_dun <- left_join(crab_dun, shoot, by= "sec_key")
@@ -94,25 +107,25 @@ crab_dun <-
   crab_dun %>% 
   dplyr::select(-c("year.y")) %>% 
   rename(year = year.x) %>% 
-  dplyr::select(-c("shoot_dens", "shoot_dens_se", "bay_code", "pot_catch", "pot"))
+  dplyr::select(-c("shoot_dens", "shoot_dens_se", "bay_code"))
 
 crab_gra <-
   crab_gra %>% 
   dplyr::select(-c("year.y"))%>% 
  rename(year = year.x) %>% 
-  dplyr::select(-c("shoot_dens", "shoot_dens_se", "bay_code", "pot_catch", "pot"))
+  dplyr::select(-c("shoot_dens", "shoot_dens_se", "bay_code"))
 
 crab_red <-
   crab_red %>% 
   dplyr::select(-c("year.y")) %>% 
   rename(year = year.x) %>% 
-  dplyr::select(-c("shoot_dens", "shoot_dens_se", "bay_code", "pot_catch", "pot"))
+  dplyr::select(-c("shoot_dens", "shoot_dens_se", "bay_code"))
 
 crab_hel <-
   crab_hel %>% 
   dplyr::select(-c("year.y"))%>% 
  rename(year = year.x) %>% 
-  dplyr::select(-c("shoot_dens", "shoot_dens_se", "bay_code", "pot_catch", "pot"))
+  dplyr::select(-c("shoot_dens", "shoot_dens_se", "bay_code"))
 ```
 
 #Remove NAs from where there is no shoot density data
@@ -121,6 +134,25 @@ crab_dun <- crab_dun[!is.na(crab_dun$eg_shoot_msq), ]
 crab_gra <- crab_gra[!is.na(crab_gra$eg_shoot_msq), ]
 crab_red <- crab_red[!is.na(crab_red$eg_shoot_msq), ]
 crab_hel <- crab_hel[!is.na(crab_hel$eg_shoot_msq), ]
+```
+
+#Join C. gracilis and C. magister to create Metacarcinus spp. df
+```{r}
+#join data and sum site_catch
+crab_met <-
+  bind_rows(crab_dun, crab_gra) %>%
+  #mutate_if(is.numeric, tidyr::replace_na, 0) %>% #in case of having NAs
+  group_by(sec_key) %>%
+  summarise_all(., sum, na.rm = TRUE)
+
+#data clean
+crab_met <- left_join(crab_dun, crab_met, by= "sec_key")
+
+crab_met <-
+  crab_met %>% 
+  dplyr::select(-c("year.y")) %>% 
+  rename(year = year.x, otter_density = otter_density.x, site_catch = site_catch.y, eg_shoot_msq = eg_shoot_msq.x) %>% 
+  dplyr::select(-c("site_catch.x", "otter_density.y", "eg_shoot_msq.y"))
 ```
 
 #Filter for correct years
@@ -156,10 +188,14 @@ crab_hel <-
   mutate_at(vars(year), 
             list(factor))
 
+crab_met <-
+  crab_met %>% 
+  mutate_at(vars(year), 
+            list(factor))
+
 
 str(crab_dun)
 ```
-
 
 #add effort column back in
 ```{r}
@@ -191,16 +227,17 @@ crab_hel$effort[crab_hel$year == "2018"]  = 4
 crab_hel$effort[crab_hel$year == "2019"]  = 4
 crab_hel$effort[crab_hel$year == "2020"]  = 3
 
+#Metacarcinus spp. =========================================================
+crab_met$effort <- NA
+crab_met$effort[crab_met$year == "2017"]  = 3
+crab_met$effort[crab_met$year == "2018"]  = 4
+crab_met$effort[crab_met$year == "2019"]  = 4
+crab_met$effort[crab_met$year == "2020"]  = 3
+
 ```
 
 #Data visualization with untransformed data, site_catch ~ shoot density
 ```{r}
-
-ggplot(data = crab_hel, aes(x = eg_shoot_msq, y= site_catch))+
-  geom_point(size = 3) +
-  theme_classic()+
-  labs(x=expression(Shoot~density~(no.~m^-2)), y= "Crab abundance")+
-  theme(text = element_text(size=20))
 
 #axis labels for use in graphs:
 #expression(Sea~otter~density~(ind.~km^-2))
@@ -213,6 +250,7 @@ d <- ggplot(data = crab_dun, aes(x = eg_shoot_msq, y= site_catch))+
  geom_smooth(method = "glm.nb", formula = y~x)+
   labs(x=expression(Shoot~density~(no.~m^-2)), y= "Crab abundance", title=expression("A)"))+
  theme(text = element_text(size=20), axis.title = element_blank())
+d
 #C. gracilis =====================================================
 g <- ggplot(data = crab_gra, aes(x = eg_shoot_msq, y= site_catch))+
   geom_point() +
@@ -220,13 +258,15 @@ g <- ggplot(data = crab_gra, aes(x = eg_shoot_msq, y= site_catch))+
   geom_smooth(method = "glm.nb", formula = y~x)+
   labs(x=expression(Shoot~density~(no.~m^-2)), y= "Crab abundance", title=expression("B)"))+
     theme(text = element_text(size=20), axis.title = element_blank())
+g
 #C. productus=====================================================
 r <- ggplot(data = crab_red, aes(x = eg_shoot_msq, y= site_catch))+
   geom_point() +
   theme_classic()+
   geom_smooth(method = "glm.nb", formula = y~x)+
   labs(x=expression(Shoot~density~(no.~m^-2)), y= "Crab abundance", title=expression("C)"))+
-    theme(text = element_text(size=20), axis.title = element_blank())
+  theme(text = element_text(size=20), axis.title = element_blank())
+r
 #T. cheiragonus======================================================
 h <- ggplot(data = crab_hel, aes(x = eg_shoot_msq, y= site_catch))+
   geom_point() +
@@ -234,46 +274,69 @@ h <- ggplot(data = crab_hel, aes(x = eg_shoot_msq, y= site_catch))+
   geom_smooth(method = "glm.nb", formula = y~x)+
   labs(x=expression(Shoot~density~(no.~m^-2)), y= "Crab abundance", title=expression("D)"))+
     theme(text = element_text(size=20), axis.title = element_blank())
-
-d
-g
-r
 h
+
+#Metacarcinus spp.======================================================
+m <- ggplot(data = crab_met, aes(x = eg_shoot_msq, y= site_catch))+
+  geom_point() +
+  theme_classic()+
+  geom_smooth(method = "glm.nb", formula = y~x)+
+  labs(x=expression(Shoot~density~(no.~m^-2)), y= "Crab abundance", title=expression("D)"))+
+    theme(text = element_text(size=20), axis.title = element_blank())
+m
+
 #arrange all plots 
 site_catch <- gridExtra::grid.arrange(d, g, r, h,  ncol=2, nrow = 2)
 
 annotate_figure(site_catch, bottom = text_grob(expression(Shoot~density~(no.~m^-2)), size = 20),left = text_grob("Crab abundance (num. site)", rot=90, size = 20))
 ```
 
-#Data visualization with sqrt data, site_catch ~ shoot density
-```{r}
-#C. magister==================================================
-ggplot(data = crab_dun, aes(x = sqrt(eg_shoot_msq), y= sqrt(site_catch)))+
-  geom_point() +
- geom_smooth(method = "glm.nb", formula = y~x)+
-  labs(x= "Shoot Density", y= "site_catch", title=expression(paste(italic("C. magister"))))+
-  theme(text = element_text(size=15))
-#C. gracilis =====================================================
-ggplot(data = crab_gra, aes(x = sqrt(eg_shoot_msq), y= sqrt(site_catch)))+
-  geom_point() +
-  geom_smooth(method = "glm.nb", formula = y~x)+
-  labs(x= "Shoot Density", y= "site_catch", title=expression(paste(italic("C. gracilis"))))+
-  theme(text = element_text(size=15))
-#C. productus=====================================================
-ggplot(data = crab_red, aes(x = sqrt(eg_shoot_msq), y= sqrt(site_catch)))+
-  geom_point() +
-  geom_smooth(method = "glm.nb", formula = y~x)+
-  labs(x= "Shoot Density", y= "site_catch", title=expression(paste(italic("C. productus"))))+
-  theme(text = element_text(size=15))
-#T. cheiragonus======================================================
-ggplot(data = crab_hel, aes(x = sqrt(eg_shoot_msq), y= sqrt(site_catch)))+
-  geom_point() +
-  geom_smooth(method = "glm.nb", formula = y~x)+
-  labs(x= "Shoot Density", y= "site_catch", title=expression(paste(italic("T. cheiragonus"))))+
-  theme(text = element_text(size=15))
-```
-
 ##GLM Data Analysis
+
+
+#Metacarcinus spp
+```{r}
+#Run GLMs
+met1 <- glm.nb(site_catch ~ otter_density + eg_shoot_msq + year, log(offset(effort)), data = crab_met)
+summary(met1)
+
+met2 <- glm.nb(site_catch ~ otter_density + eg_shoot_msq, log(offset(effort)), data = crab_met)
+summary(met2)
+
+met3 <- glm.nb(site_catch ~ otter_density + year, log(offset(effort)), data = crab_met)
+summary(met3)
+
+met4 <- glm.nb(site_catch ~ otter_density, log(offset(effort)), data = crab_met)
+summary(met4)
+
+met5 <- glm.nb(site_catch ~ eg_shoot_msq + year, log(offset(effort)), data = crab_met)
+summary(met5)
+
+met6 <- glm.nb(site_catch ~ eg_shoot_msq, log(offset(effort)), data = crab_met)
+summary(met6)
+
+met7 <- glm.nb(site_catch ~  year, log(offset(effort)), data = crab_met)
+summary(met7)
+
+met8 <- glm.nb(site_catch ~ otter_density*eg_shoot_msq, log(offset(effort)), data = crab_met)
+summary(met8)
+
+met9 <- glm.nb(site_catch ~ otter_density*year, log(offset(effort)), data = crab_met)
+summary(met9)
+
+met10 <- glm.nb(site_catch ~ eg_shoot_msq*year, log(offset(effort)), data = crab_met)
+summary(met10)
+
+#Create list of models
+met_models <- list(met1,met2,met3,met4,met5,met6,met7,met8,met9,met10)
+names(met_models) <- c("~sea otter density + shoot density + year", "~sea otter_density + shoot density", "~sea otter density + year", "~sea otter density", "~shoot density + year", "~shoot density", "~year", "~sea otter density*shoot density", "~sea otter density*year", "shoot density*year")
+#Calculate AICc
+AICc(met1);AICc(met2);AICc(met3);AICc(met4);AICc(met5);AICc(met6);AICc(met7);AICc(met8);AICc(met9);AICc(met10)
+#Calculate delta-AIC, and AIC weights
+aictab(met_models, modnames = names(met_models),
+second.ord = TRUE, nobs = NULL, sort = TRUE)
+
+```
 
 #C.magister
 ```{r}
