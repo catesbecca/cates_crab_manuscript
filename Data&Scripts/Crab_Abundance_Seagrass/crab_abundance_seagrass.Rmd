@@ -239,9 +239,9 @@ crab_met$effort[crab_met$year == "2020"]  = 3
 #Data visualization with untransformed data, site_catch ~ shoot density
 ```{r}
 
-#axis labels for use in graphs:
-#expression(Sea~otter~density~(ind.~km^-2))
-#expression(Shoot~density~(no.~m^-2))
+#######axis labels for use in graphs##############
+expression(Sea~otter~density~(ind.~km^-2))
+expression(Shoot~density~(no.~m^-2))
 
 #C. magister==================================================
 d <- ggplot(data = crab_dun, aes(x = eg_shoot_msq, y= site_catch))+
@@ -292,7 +292,6 @@ annotate_figure(site_catch, bottom = text_grob(expression(Shoot~density~(no.~m^-
 ```
 
 ##GLM Data Analysis
-
 
 #Metacarcinus spp
 ```{r}
@@ -513,12 +512,10 @@ second.ord = TRUE, nobs = NULL, sort = TRUE)
 
 ```
 
-#Plots for all species and significant predictor variables
-
-#LEFT OFF HERE
+#Plots for species models
 ```{r}
 #C. magister
-fig.dun1 <- visreg(dun1, "otter_density", band= TRUE, scale = "response", overlay=TRUE, gg = TRUE, rug = FALSE)+
+fig.dun1 <- visreg(dun4, "otter_density", band= TRUE, scale = "response", overlay=TRUE, gg = TRUE, rug = FALSE)+
   geom_point(data = crab_dun, aes(otter_density, site_catch))+
   theme_classic()+
   labs(x= expression(Sea~otter~density~(ind.~km^-2)), y= "Crab abundance", title=expression("A)"))+
@@ -526,113 +523,59 @@ fig.dun1 <- visreg(dun1, "otter_density", band= TRUE, scale = "response", overla
   ylim(0,13)
 fig.dun1
 
-fig.dun2 <- visreg(dun1, "eg_shoot_msq", band= TRUE, scale = "response", overlay=TRUE, gg = TRUE, rug = FALSE)+
-  geom_point(data = crab_dun, aes(eg_shoot_msq, site_catch))+
-  theme_classic()+
-  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab abundance", title=expression("A)"))+
-  theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())+
-  ylim(0,13)
-fig.dun2
-
-dun.summary <- crab_dun %>%
-  group_by(year) %>%
-  summarise(
-    sd = sd(site_catch, na.rm = TRUE),
-    site_catch = mean(site_catch)
-  )
-dun.summary
-
-f <- ggplot(
-  dun.summary, 
-  aes(x = year, y = site_catch, ymin = site_catch-sd, ymax = site_catch+sd)
-  )
-ggplot(crab_dun, aes(year, site_catch)) +
-  geom_jitter(position = position_jitter(0.2), color = "darkgray") + 
-  geom_pointrange(aes(ymin = site_catch-sd, ymax = site_catch+sd),data = dun.summary)
-
-f+geom_crossbar()
-f+geom_errorbar()
-f + geom_pointrange()
-
-# Standard error bars
-f + geom_errorbar(width = 0.2) +
-  geom_point(size = 1.5)
-
-
-fig.dun3 <- ggplot(crab_dun, aes(y = site_catch, x = year)) +
-  theme_classic()+
- geom_bar(stat = "identity", width = .5, fill = "skyblue") +
-   geom_errorbar(aes(x=year, ymin=(max(site_catch) - crab_dun_sd), ymax=(max(site_catch) + crab_dun_sd)), width=0.4, colour="orange", alpha=0.9, size=1.3)+
-    labs(x = "Year",y ="Crab Abundance") +
-  theme(axis.text.x = element_text(angle=65, vjust=0.6))
-fig.dun3
-
-#with error bars
-ggplot(crab_dun) +
-    geom_bar(aes(x=year, y=site_catch), stat="identity", fill="skyblue", alpha=0.7) +
-    geom_errorbar( aes(x=year, ymin=site_catch - crab_dun_sd, ymax=site_catch + crab_dun_sd), width=0.4, colour="orange", alpha=0.9, size=1.3)
-
-
 #visreg slender
-fig.gra1 <- visreg(gra6, "eg_shoot_msq", band= FALSE, scale = "response", rug=FALSE, overlay=TRUE, gg = TRUE)+
+fig.gra1 <- visreg(gra5, "eg_shoot_msq", band= TRUE, scale = "response", rug=FALSE, overlay=TRUE, gg = TRUE)+
   geom_point(data = crab_gra, aes(eg_shoot_msq, site_catch))+
   theme_classic()+
   labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab abundance", title=expression("B)"))+
   theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())+
-  xlim(0,2000)+
+  xlim(0,1300)+
   ylim(0,160)
+fig.gra1
 
 #visreg red rock
-fig.red1 <- visreg(red15, "otter_density", band= FALSE, scale = "response", rug=FALSE, overlay=TRUE, gg = TRUE)+
+fig.red1 <- visreg(red8, "otter_density", band= TRUE, scale = "response", rug=FALSE, overlay=TRUE, gg = TRUE)+
   geom_point(data = crab_red, aes(otter_density, site_catch))+
   theme_classic()+
   labs(x= expression(Sea~otter~density~(ind.~km^-2)), y= "Crab abundance", title=expression("C)"))+
  theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())+
   ylim(0,40)
+fig.red1
  
-fig.red2 <- visreg(red15, "eg_mass_msq", band= FALSE, scale = "response", rug=FALSE, overlay=TRUE, gg = TRUE)+
-  geom_point(data = crab_red, aes(eg_mass_msq, site_catch))+
-  theme_classic()+
-  labs(x= expression(Eelgrass~biomass~(g.~m^-2)), y= "Crab abundance", title=expression("D)"))+
-  theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())+
-  ylim(0,40)
- 
-fig.red3 <- visreg(red15, "eg_shoot_msq", band= FALSE, scale = "response", rug=FALSE, overlay=TRUE, gg = TRUE)+
+fig.red2 <- visreg(red8, "eg_shoot_msq", by = "otter_density", band= TRUE, scale = "response", rug=FALSE, overlay=TRUE, gg = TRUE)+
   geom_point(data = crab_red, aes(eg_shoot_msq, site_catch))+
   theme_classic()+
-  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab abundance", title=expression("E)"))+
+  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab abundance", title=expression("D)"))+
   theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())+
   ylim(0,40)
+fig.red2
 
 #visreg helmet
-fig.hel1 <- visreg(hel10, "otter_density", band= FALSE, scale = "response", rug=FALSE, gg = TRUE)+
+fig.hel1 <- visreg(hel8, "otter_density", band= FALSE, scale = "response", rug=FALSE, gg = TRUE)+
     geom_point(data = crab_hel, aes(otter_density, site_catch))+
    theme_classic()+
   labs(x= expression(Sea~otter~density~(ind.~km^-2)), y= "Crab abundance", title=expression("F)"))+
   theme(text = element_text(size=20), axis.title.y = element_blank())+
-  ylim(0,20)
+  xlim(0,100)+
+  ylim(0,1000)
+fig.hel1
  
-fig.hel2 <- visreg(hel10, "eg_mass_msq", band= FALSE, scale = "response", rug=FALSE, overlay=TRUE, gg = TRUE)+
-    geom_point(data = crab_hel, aes(eg_mass_msq, site_catch))+
-   theme_classic()+
-  labs(x= expression(Eelgrass~biomass~(g.~m^-2)), y= "Crab abundance", title=expression("G)"))+
-  theme(text = element_text(size=20), axis.title.y = element_blank())+
-  ylim(0,20)
-
-fig.hel3 <- visreg(hel10, "eg_shoot_msq", band= FALSE, scale = "response", rug=FALSE, overlay=TRUE, gg = TRUE)+
+fig.hel2 <- visreg(hel8, "eg_shoot_msq", by = "otter_density", band= FALSE, scale = "response", rug=FALSE, overlay=TRUE, gg = TRUE)+
     geom_point(data = crab_hel, aes(eg_shoot_msq, site_catch))+
    theme_classic()+
-  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab abundance", title=expression("H)"))+
- theme(text = element_text(size=20), axis.title.y = element_blank())+
+  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab abundance", title=expression("G)"))+
+  theme(text = element_text(size=20), axis.title.y = element_blank())+
   ylim(0,20)
+fig.hel2
 
 ```
 
+#THESIS
 #arrange visreg plots
 ```{r}
 vis.dun <- gridExtra::grid.arrange(fig.dun1, ncol=3, nrow = 1)
 vis.gra <- gridExtra::grid.arrange(fig.dun1, fig.dun1, fig.gra1, ncol=3, nrow = 1)
-vis.red <- gridExtra::grid.arrange(fig.red1,fig.red2,fig.red3, ncol=3, nrow = 1)
+vis.red <- gridExtra::grid.arrange(fig.red1,fig.red2, ncol=3, nrow = 1)
 vis.hel <- gridExtra::grid.arrange(fig.hel1, fig.hel2, fig.hel3, ncol=3, nrow = 1)
 
 vis.all <- gridExtra::grid.arrange(vis.dun, vis.gra, vis.red, vis.hel, ncol=1, nrow = 4)
@@ -641,73 +584,15 @@ vis.all1 <- annotate_figure(vis.all, left = text_grob("Crab abundance (num.site)
 vis.all1
 ```
 
-
 #Calculate percent change for tble values
 ```{r}
 100*(exp(0.285)-1)
 ```
 
-#Arrange all plots shoot density ~ carapaced width and crab abundance
-```{r}
-catch.shoot <- gridExtra::grid.arrange(d,g,r,h, ncol=1, nrow = 4)
-catch.shoot <- annotate_figure(catch.shoot, left = text_grob("Crab abundance (num.site)", rot=90, size = 15))
-catch.shoot
-
-size.shoot <- gridExtra::grid.arrange(d.size, g.size, r.size, h.size, ncol=1, nrow = 4)
-size.shoot <- annotate_figure(size.shoot, left = text_grob("Carapace width (mm)", rot=90, size = 15))
-size.shoot
-
-
-shoot_density <-  gridExtra::grid.arrange(catch.shoot, size.shoot,  ncol=2, nrow = 1)
-annotate_figure(shoot_density, bottom = text_grob(expression(Shoot~density~(no.~m^-2)), size = 15))
-```
-
-#Arrange all plots seagrass biomass ~ carapaced width and crab abundance
-```{r}
-catch.seamass <- gridExtra::grid.arrange(d,g,r,h, ncol=1, nrow = 4)
-catch.seamass <- annotate_figure(catch.seamass, left = text_grob("Crab abundance (num.site)", rot=90, size = 20))
-catch.seamass
-
-size.seamass <- gridExtra::grid.arrange(d.size, g.size, r.size, h.size, ncol=1, nrow = 4)
-size.seamass <- annotate_figure(size.seamass, left = text_grob("Carapace width (mm)", rot=90, size = 20))
-size.seamass
-
-
-seagrass_biomass <-  gridExtra::grid.arrange(catch.seamass, size.seamass,  ncol=2, nrow = 1)
-annotate_figure(seagrass_biomass, bottom = text_grob(expression(Seagrass~biomass~(g.~m^-2)), size = 20))
-```
-
-
-#rename columns for clarity in correlation plots
-```{r}
-names(crab_dun) <- c('sec_key', 'shoot density', 'sea otter density', 'crab abundance', 'CPUE', 'bay code', 
-                       'shoot density untransformed', 'seagrass biomass', 'effort')
-
-names(crab_gra) <- c('sec_key', 'shoot density', 'sea otter density', 'crab abundance', 'CPUE', 'bay code', 
-                       'shoot density untransformed', 'seagrass biomass', 'effort')
-
-names(crab_red) <- c('sec_key', 'shoot density', 'sea otter density', 'crab abundance', 'CPUE', 'bay code', 
-                       'shoot density untransformed', 'seagrass biomass', 'effort')
-
-names(crab_hel) <- c('sec_key', 'shoot density', 'sea otter density', 'crab abundance', 'CPUE', 'bay code', 
-                       'shoot density untransformed', 'seagrass biomass', 'effort')
-```
-
-
 #Corrgram for  variables
 ```{r}
-library(corrplot)
-dun_cor<-cor(crab_hel[,c(4,2,8,3)])
-head(round(dun_cor,2))
-
-col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
-corrplot(dun_cor, method="color", col=col(200),  
-         type="lower", order="original", 
-         addCoef.col = "black", # Add coefficient of correlation
-         tl.col="black", tl.srt=90, number.cex=1.1)#Text label color and rotation
-         
-#correlations
-corrgram(crab_dun[,c(4,3,2,8)], 
+#C. magister correlations
+ corrgram(crab_dun[,c(2,3,4,5)], 
          lower.panel=panel.shade,
          upper.panel=panel.cor,
          diag.panel= panel.density,
@@ -715,8 +600,8 @@ corrgram(crab_dun[,c(4,3,2,8)],
          cex.labels = 4,
          mar = 0.1 + c(0.2,0.2,0.4,0.2))
 
-#correlations
-corrgram(crab_gra[,c(4,3,2,8)], 
+#C. gracilis correlations
+corrgram(crab_gra[,c(2,3,4,5)], 
          lower.panel=panel.shade,
          upper.panel=panel.cor,
          diag.panel= panel.density,
@@ -724,8 +609,8 @@ corrgram(crab_gra[,c(4,3,2,8)],
          cex.labels = 4,
          mar = 0.1 + c(0.2,0.2,0.4,0.2))
 
-#correlations
-corrgram(crab_red[,c(4,3,2,8)], 
+#C. productus correlations
+corrgram(crab_red[,c(2,3,4,5)], 
          lower.panel=panel.shade,
          upper.panel=panel.cor,
          diag.panel= panel.density,
@@ -733,8 +618,8 @@ corrgram(crab_red[,c(4,3,2,8)],
          cex.labels = 4,
          mar = 0.1 + c(0.2,0.2,0.4,0.2))
 
-#correlations
-corrgram(crab_hel[,c(4,3,2,8)], 
+#t. cheiragonus correlations
+ corrgram(crab_hel[,c(2,3,4,5)], 
          lower.panel=panel.shade,
          upper.panel=panel.cor,
          diag.panel= panel.density,
@@ -742,7 +627,7 @@ corrgram(crab_hel[,c(4,3,2,8)],
          cex.labels = 4,
          mar = 0.1 + c(0.2,0.2,0.4,0.2))
 
-corr.crab <- gridExtra::grid.arrange(a,b,c,d)
+corr.crab <- gridExtra::grid.arrange()
 
 corr.crab1 <- annotate_figure(corr.crab, left = text_grob("Crab abundance (num.site)", rot=90, size = 15))
 corr.crab1
@@ -750,15 +635,15 @@ corr.crab1
 
 #VIF correlation check 
 ```{r}
-dun1 <- lm(site_catch~otter_density+eg_shoot_msq+eg_mass_msq, data = crab_dun)
+dun1 <- lm(site_catch~otter_density+eg_shoot_msq+year, data = crab_dun)
 car::vif(dun1)
 
-gra1 <- lm(site_catch~otter_density+eg_shoot_msq+eg_mass_msq, data = crab_gra)
+gra1 <- lm(site_catch~otter_density+eg_shoot_msq+year, data = crab_gra)
 car::vif(gra1)
 
-red1 <- lm(site_catch~otter_density+eg_shoot_msq+eg_mass_msq, data = crab_red)
+red1 <- lm(site_catch~otter_density+eg_shoot_msq+year, data = crab_red)
 car::vif(red1)
 
-hel1 <- lm(site_catch~otter_density+eg_shoot_msq+eg_mass_msq, data = crab_hel)
+hel1 <- lm(site_catch~otter_density+eg_shoot_msq+year, data = crab_hel)
 car::vif(hel1)
 ```
