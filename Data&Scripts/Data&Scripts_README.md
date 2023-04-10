@@ -33,23 +33,23 @@ _R script for analyzing and plotting size distribution of crab species against s
 ## [Crab_Abundance_Seagrass](Crab_Abundance_Seagrass)
 * [**"crab_dun_abundance.csv"**](Crab_Abundance_Seagrass/crab_dun_abundance.csv)
 
-_csv file including C. magister abundance data from Prince of Wales Island sites 2017-2020 including site catch, sea otter density, site code, and year
+_csv file including C. magister abundance data from Prince of Wales Island sites 2017-2020 including pot type, pot catch, sea otter density, site code, and year
 
 * [**"crab_gra_abundance.csv"**](Crab_Abundance_Seagrass/crab_gra_abundance.csv)
 
-_csv file including C. gracilis abundance data from Prince of Wales Island sites 2017-2020 including site catch, sea otter density, site code, and year
+_csv file including C. gracilis abundance data from Prince of Wales Island sites 2017-2020 including pot type, pot catch, sea otter density, site code, and year
 
 * [**"crab_red_abundance.csv"**](Crab_Abundance_Seagrass/crab_red_abundance.csv)
 
-_csv file including C. productus abundance data from Prince of Wales Island sites 2017-2020 including site catch, sea otter density, site code, and year
+_csv file including C. productus abundance data from Prince of Wales Island sites 2017-2020 including pot type, pot catch, sea otter density, site code, and year
 
 * [**"crab_hel_abundance.csv"**](Crab_Abundance_Seagrass/crab_hel_abundance.csv)
 
-_csv file including T. cheiragonus abundance data from Prince of Wales Island sites 2017-2020 including site catch, sea otter density, site code, and year
+_csv file including T. cheiragonus abundance data from Prince of Wales Island sites 2017-2020 including pot type, pot catch, sea otter density, site code, and year
 
 * [**"shoot_density.csv"**](Crab_Abundance_Seagrass/shoot_density.csv)
 
-_csv file including seagrass shoot density data from Prince of Wales Island sites 2017-2020 including shoot density (m^2), site code, and year
+_csv file including seagrass shoot density data from Prince of Wales Island sites 2017-2020 including shoot density, standard error, site code, and year
 
 * [**"crab_abundance_seagrass.rmd"**](Crab_Abundance_Seagrass/crab_abundance_seagrass.csv)
 
