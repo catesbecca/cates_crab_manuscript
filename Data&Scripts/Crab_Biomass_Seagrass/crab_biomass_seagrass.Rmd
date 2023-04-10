@@ -1,0 +1,486 @@
+---
+title: "crab_biomass_seagrass"
+author: "Rebecca Cates"
+date: "6/10/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Load libraries
+```{r warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggpubr)
+library(corrgram)
+library(mgcv)
+library(MASS)
+library(pscl)
+```
+
+#Read in crab and shoot density data
+```{r}
+crab <- read.csv("crab_biomass.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) #eventually source from KNB
+
+shoot <- read.csv("shoot_density.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) #eventually source from KNB
+
+bio <- read.csv("seagrass_biomass.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) #eventually source from KNB
+```
+
+#Site level biomass
+```{r}
+crab <-
+  crab %>% 
+  group_by(sec_key, SpCode) %>% 
+  dplyr::select(-c("trap", "mass.round", "string")) %>% 
+  mutate(biomass = sum(mass)) %>% 
+  dplyr::select(-c("mass")) %>% 
+  distinct()
+```
+
+#Create effort column for bpue calculations
+```{r}
+crab$effort <- NA
+crab$effort[crab$year == 17]  = 3
+crab$effort[crab$year == 18]  = 4
+crab$effort[crab$year == 19]  = 4
+crab$effort[crab$year == 20]  = 3
+```
+
+#Clean up "shoot" df, calculate m2 shoot-density, and join with crab biomass and seagrass biomass df
+#rename columns for clarity
+```{r}
+#Clean up shoot density df
+shoot <-
+  shoot %>% 
+  rename(year = ï..year) %>% 
+  mutate(shoot_m2 = shoot_dens*4)
+
+#Clean up sg biomass df
+bio <-
+  bio %>% 
+  dplyr::select(-c("X", "site_2019", "bay_code", "X.1", "X.2", "X.3"))
+
+#Join dataframes
+crab <- left_join(crab, shoot, by= "sec_key")
+crab <- left_join(crab, bio, by= "sec_key")
+
+#Clean up final df, select for needed columns
+crab <-
+  crab %>% 
+  dplyr::select(-c("year.y", "bay_code", "shoot_dens", "shoot_dens_se")) %>% 
+  rename(year = year.x, eg_mass_msq = avg_biom_msq, eg_shoot_msq = shoot_m2)
+
+
+```
+
+#Remove NAs from where there is no shoot density data
+```{r}
+crab <- crab[!is.na(crab$eg_mass_msq), ]
+crab <- crab[!is.na(crab$eg_shoot_msq), ]
+```
+
+#Filter for species 
+```{r}
+crab_dun <-
+  crab %>% 
+  filter(SpCode %in% c("CRABDUN"))
+
+crab_gra <-
+  crab %>% 
+  filter(SpCode %in% c("CRABGRA"))
+
+crab_red <-
+  crab %>% 
+  filter(SpCode %in% c("CRABRR"))
+
+crab_hel <-
+  crab %>% 
+  filter(SpCode %in% c("CRABHEL"))
+```
+
+#Filter for correct years for M. gracilis and C. magister
+```{r}
+crab_dun <-
+  crab_dun %>% 
+  filter(year %in% c("19", "20"))
+
+crab_gra <-
+  crab_gra %>% 
+  filter(year %in% c("19", "20"))
+```
+
+#Create Biomass per unit effort column, bpue
+```{r}
+crab_dun$bpue <- NA
+crab_dun$bpue <- (crab_dun$biomass/crab_dun$effort)
+
+crab_gra$bpue <- NA
+crab_gra$bpue <- (crab_gra$biomass/crab_gra$effort)
+
+crab_red$bpue <- NA
+crab_red$bpue <- (crab_red$biomass/crab_red$effort)
+
+crab_hel$bpue <- NA
+crab_hel$bpue <- (crab_hel$biomass/crab_hel$effort)
+
+```
+
+#Create rounded biomass column, bio_round
+```{r}
+crab_dun$bio_round <- NA
+crab_dun$bio_round <- round(crab_dun$biomass)
+
+crab_gra$bio_round <- NA
+crab_gra$bio_round <- round(crab_gra$biomass)
+
+crab_red$bio_round <- NA
+crab_red$bio_round <- round(crab_red$biomass)
+
+crab_hel$bio_round <- NA
+crab_hel$bio_round <- round(crab_hel$biomass)
+```
+
+#Corrgram for independent variables
+```{r}
+#correlations
+corrgram(crab_dun[,c(1,4:7)], 
+         lower.panel=panel.shade,
+         upper.panel=panel.cor,
+         diag.panel= panel.density,
+         main="CRAB_DUN data in PC2/PC1 Order")
+
+#correlations
+corrgram(crab_gra[,c(1,4:7)], 
+         lower.panel=panel.shade,
+         upper.panel=panel.cor,
+         diag.panel= panel.density,
+         main="CRAB_GRA data in PC2/PC1 Order")
+
+#correlations
+corrgram(crab_red[,c(1,4:7)], 
+         lower.panel=panel.shade,
+         upper.panel=panel.cor,
+         diag.panel= panel.density,
+         main="CRAB_RED data in PC2/PC1 Order")
+
+#correlations
+corrgram(crab_hel[,c(1,4:7)], 
+         lower.panel=panel.shade,
+         upper.panel=panel.cor,
+         diag.panel= panel.density,
+         main="CRAB_HEL data in PC2/PC1 Order")
+```
+
+#VIF correlation check 
+```{r}
+dun1 <- lm(biomass~otter_density+eg_shoot_msq+eg_mass_msq, data = crab_dun)
+car::vif(dun1)
+
+gra1 <- lm(biomass~otter_density+eg_shoot_msq+eg_mass_msq, data = crab_gra)
+car::vif(gra1)
+
+red1 <- lm(biomass~otter_density+eg_shoot_msq+eg_mass_msq, data = crab_red)
+car::vif(red1)
+
+hel1 <- lm(biomass~otter_density+eg_shoot_msq+eg_mass_msq, data = crab_hel)
+car::vif(hel1)
+```
+
+#Data visualization with untransformed data, crab mass ~ shoot density
+```{r}
+#C. magister==================================================
+d <- ggplot(data = crab_dun, aes(x = eg_shoot_msq, y= bio_round))+
+  geom_point() +
+  theme_light()+
+  geom_smooth(method = "glm.nb", formula = y~x)+
+  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab biomass (g)", title=expression("A)"~paste(italic("C. magister,")~"data 2019-2020")))+
+   theme(axis.title = element_blank(), text = element_text(size=15))
+#M. gracilis =====================================================
+g <- ggplot(data = crab_gra, aes(x = eg_shoot_msq, y= bio_round))+
+  geom_point() +
+  theme_light()+
+  geom_smooth(method = "glm.nb", formula = y~x)+
+  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab biomass (g)", title=expression(~"B)"~paste(italic("M. gracilis,")~"data 2019-2020")))+
+    theme(axis.title = element_blank(), text = element_text(size=15))
+#C. productus=====================================================
+r <- ggplot(data = crab_red, aes(x = eg_shoot_msq, y= bio_round))+
+  geom_point() +
+  theme_light()+
+  geom_smooth(method = "glm.nb", formula = y~x)+
+  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab biomass (g)", title=expression(~"C)"~paste(italic("C. productus,")~"data 2017-2020")))+
+    theme(axis.title = element_blank(), text = element_text(size=15))
+#T. cheiragonus======================================================
+h <- ggplot(data = crab_hel, aes(x = eg_shoot_msq, y= bio_round))+
+  geom_point() +
+  theme_light()+
+  geom_smooth(method = "glm.nb", formula = y~x)+
+  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab biomass (g)", title=expression(~"D)"~paste(italic("T. cheiragonus,")~"data 2017-2020")))+
+    theme(axis.title = element_blank(), text = element_text(size=15))
+
+d
+g
+r
+h
+#arrange all plots 
+mass <- gridExtra::grid.arrange(d, g, r, h,  ncol=2, nrow = 2)
+
+annotate_figure(mass, bottom = text_grob(expression(Shoot~density~(no.~m^-2)), size = 20),left = text_grob(expression(Crab~biomass~(biomass.~site^-1)), rot=90, size = 20))
+```
+
+#Data visualization with sqrt data, crab mass ~ shoot density
+```{r}
+#C. magister==================================================
+ggplot(data = crab_dun, aes(x = sqrt(eg_shoot_msq), y= sqrt(bio_round)))+
+  geom_point() +
+ geom_smooth(method = "glm.nb", formula = y~x)+
+  labs(x= "Shoot Density", y= "Biomass(g)", title=expression(paste(italic("C. magister"))))+
+  theme(text = element_text(size=15))
+#M. gracilis =====================================================
+ggplot(data = crab_gra, aes(x = sqrt(eg_shoot_msq), y= sqrt(bio_round)))+
+  geom_point() +
+  geom_smooth(method = "glm.nb", formula = y~x)+
+  labs(x= "Shoot Density", y= "Biomass", title=expression(paste(italic("M. gracilis"))))+
+  theme(text = element_text(size=15))
+#C. productus=====================================================
+ggplot(data = crab_red, aes(x = sqrt(eg_shoot_msq), y= sqrt(bio_round)))+
+  geom_point() +
+  geom_smooth(method = "glm.nb", formula = y~x)+
+  labs(x= "Shoot Density", y= "Biomass", title=expression(paste(italic("C. productus"))))+
+  theme(text = element_text(size=15))
+#T. cheiragonus======================================================
+ggplot(data = crab_hel, aes(x = sqrt(eg_shoot_msq), y= sqrt(bio_round)))+
+  geom_point() +
+  geom_smooth(method = "glm.nb", formula = y~x)+
+  labs(x= "Shoot Density", y= "Biomass", title=expression(paste(italic("T. cheiragonus"))))+
+  theme(text = element_text(size=15))
+```
+
+#Data visualization with untransformed data, crab mass ~ sg mass
+```{r}
+#C. magister==================================================
+d <- ggplot(data = crab_dun, aes(x = eg_mass_msq, y= bio_round))+
+  geom_point() +
+  theme_light()+
+ geom_smooth(method = "glm.nb", formula = y~x)+
+  labs(x= expression(Seagrass~biomass~(g.~m^-2)), y= "Crab biomass (g)", title=expression("A)"~paste(italic("C. magister,")~"data 2019-2020")))+
+  theme(axis.title = element_blank(), text = element_text(size=15))
+#M. gracilis =====================================================
+g <- ggplot(data = crab_gra, aes(x = eg_mass_msq, y= bio_round))+
+  geom_point() +
+  theme_light()+
+  geom_smooth(method = "glm.nb", formula = y~x)+
+  labs(x= expression(Seagrass~biomass~(g.~m^-2)),  y= "Crab biomass (g)", title=expression(~"B)"~paste(italic("M. gracilis,")~"data 2019-2020")))+
+    theme(axis.title = element_blank(), text = element_text(size=15))
+#C. productus=====================================================
+r <- ggplot(data = crab_red, aes(x = eg_mass_msq, y= bio_round))+
+  geom_point() +
+  theme_light()+
+  geom_smooth(method = "glm.nb", formula = y~x)+
+  labs(x= expression(Seagrass~biomass~(g.~m^-2)),  y= "Crab biomass (g)", title=expression(~"C)"~paste(italic("C. productus,")~"data 2017-2020")))+
+    theme(axis.title = element_blank(), text = element_text(size=15))
+#T. cheiragonus======================================================
+h <- ggplot(data = crab_hel, aes(x = eg_mass_msq, y= bio_round))+
+  geom_point() +
+  theme_light()+
+  geom_smooth(method = "glm.nb", formula = y~x)+
+  labs(x= expression(Seagrass~biomass~(g.~m^-2)),  y= "Crab biomass (g)", title=expression(~"D)"~paste(italic("T. cheiragonus,")~"data 2017-2020")))+
+    theme(axis.title = element_blank(), text = element_text(size=15))
+
+d
+g
+r
+h
+
+#arrange all plots 
+mass <- gridExtra::grid.arrange(d, g, r, h,  ncol=2, nrow = 2)
+
+annotate_figure(mass, bottom = text_grob(expression(Seagrass~biomass~(g.~m^-2)), size = 20),left = text_grob(expression(Crab~biomass~(biomass.~site^-1)), rot=90, size = 20))
+```
+
+#Data analysis
+#C. magister
+```{r}
+#Run GLMs
+dun1 <- glm.nb(bio_round ~ otter_density + eg_shoot_msq + eg_mass_msq + log(offset(effort)), data = crab_dun)
+summary(dun1)
+
+dun2 <- glm.nb(bio_round ~ otter_density  + eg_mass_msq + log(offset(effort)), data = crab_dun)
+summary(dun2)
+
+dun3 <- glm.nb(bio_round ~ otter_density + eg_shoot_msq + log(offset(effort)), data = crab_dun)
+summary(dun3)
+
+dun4 <- glm.nb(bio_round ~ eg_shoot_msq + eg_mass_msq + log(offset(effort)), data = crab_dun)
+summary(dun4)
+
+dun5 <- glm.nb(bio_round ~ otter_density + log(offset(effort)), data = crab_dun)
+summary(dun5)
+
+dun6 <- glm.nb(bio_round ~ eg_shoot_msq + log(offset(effort)), data = crab_dun)
+summary(dun6)
+
+dun7 <- glm.nb(bio_round ~ eg_mass_msq + log(offset(effort)), data = crab_dun)
+summary(dun7)
+
+dun8 <- glm.nb(bio_round ~ otter_density*eg_shoot_msq + log(offset(effort)), data = crab_dun)
+summary(dun8)
+
+dun9 <- glm.nb(bio_round ~ otter_density*eg_mass_msq+ log(offset(effort)), data = crab_dun)
+summary(dun9)
+
+dun10 <- glm.nb(bio_round ~ eg_shoot_msq*eg_mass_msq + log(offset(effort)), data = crab_dun)
+summary(dun10)
+
+#Create list of models
+dun_models <- list(dun1,dun2,dun3,dun4,dun5,dun6,dun7,dun8,dun9,dun10)
+names(dun_models) <- c("~sea otter density + shoot density + seagrass biomass", "~sea otter_density + seagrass biomass", "~sea otter density + shoot density", "~shoot density + seagrass biomass", "~sea otter density", "~shoot density", "~seagrass biomass", "~sea otter density*shoot density", "~sea otter density*seagrass biomass", "~shoot density*seagrass biomass" )
+#Calculate AICc
+library(MuMIn)
+AICc(dun1);AICc(dun2);AICc(dun3);AICc(dun4);AICc(dun5);AICc(dun6);AICc(dun7);AICc(dun8);AICc(dun9);AICc(dun10)
+#Calculate delta-AIC, and AIC weights
+library(AICcmodavg)
+aictab(dun_models, modnames = names(dun_models),
+second.ord = TRUE, nobs = NULL, sort = TRUE)
+```
+
+#M. gracilis
+```{r}
+#Run zero inflated GLMs
+gra1 <- glm.nb(bio_round ~ otter_density + eg_shoot_msq + eg_mass_msq + log(offset(effort)), data = crab_gra)
+summary(gra1)
+
+gra2 <- glm.nb(bio_round ~ otter_density  + eg_mass_msq + log(offset(effort)), data = crab_gra)
+summary(gra2)
+
+gra3 <- glm.nb(bio_round ~ otter_density + eg_shoot_msq + log(offset(effort)), data = crab_gra)
+summary(gra3)
+
+gra4 <- glm.nb(bio_round ~ eg_shoot_msq + eg_mass_msq + log(offset(effort)), data = crab_gra)
+summary(gra4)
+
+gra5 <- glm.nb(bio_round ~ otter_density + log(offset(effort)), data = crab_gra)
+summary(gra5)
+
+gra6 <- glm.nb(bio_round ~ eg_shoot_msq + log(offset(effort)), data = crab_gra)
+summary(gra6)
+
+gra7 <- glm.nb(bio_round ~ eg_mass_msq + log(offset(effort)), data = crab_gra)
+summary(gra7)
+
+gra8 <- glm.nb(bio_round ~ otter_density*eg_shoot_msq + log(offset(effort)), data = crab_gra)
+summary(gra8)
+
+gra9 <- glm.nb(bio_round ~ otter_density*eg_mass_msq+ log(offset(effort)), data = crab_gra)
+summary(gra9)
+
+gra10 <- glm.nb(bio_round ~ eg_shoot_msq*eg_mass_msq + log(offset(effort)), data = crab_gra)
+summary(gra10)
+
+#Create list of models
+gra_models <- list(gra1,gra2,gra3,gra4,gra5,gra6,gra7,gra8,gra9,gra10)
+names(gra_models) <- c("~sea otter density + shoot density + seagrass biomass", "~sea otter_density + seagrass biomass", "~sea otter density + shoot density", "~shoot density + seagrass biomass", "~sea otter density", "~shoot density", "~seagrass biomass", "~sea otter density*shoot density", "~sea otter density*seagrass biomass", "~shoot density*seagrass biomass" )
+#Calculate AICc
+library(MuMIn)
+AICc(gra1);AICc(gra2);AICc(gra3);AICc(gra4);AICc(gra5);AICc(gra6);AICc(gra7);AICc(gra8);AICc(gra9);AICc(gra10)
+#Calculate delta-AIC, and AIC weights
+library(AICcmodavg)
+aictab(gra_models, modnames = names(gra_models),
+second.ord = TRUE, nobs = NULL, sort = TRUE)
+```
+
+#C. productus
+```{r}
+#Run zero inflated GLMs
+red1 <- glm.nb(bio_round ~ otter_density + eg_shoot_msq + eg_mass_msq + log(offset(effort)), data = crab_red)
+summary(red1)
+
+red2 <- glm.nb(bio_round ~ otter_density  + eg_mass_msq + log(offset(effort)), data = crab_red)
+summary(red2)
+
+red3 <- glm.nb(bio_round ~ otter_density + eg_shoot_msq + log(offset(effort)), data = crab_red)
+summary(red3)
+
+red4 <- glm.nb(bio_round ~ eg_shoot_msq + eg_mass_msq + log(offset(effort)), data = crab_red)
+summary(red4)
+
+red5 <- glm.nb(bio_round ~ otter_density + log(offset(effort)), data = crab_red)
+summary(red5)
+
+red6 <- glm.nb(bio_round ~ eg_shoot_msq + log(offset(effort)), data = crab_red)
+summary(red6)
+
+red7 <- glm.nb(bio_round ~ eg_mass_msq + log(offset(effort)), data = crab_red)
+summary(red7)
+
+red8 <- glm.nb(bio_round ~ otter_density*eg_shoot_msq + log(offset(effort)), data = crab_red)
+summary(red8)
+
+red9 <- glm.nb(bio_round ~ otter_density*eg_mass_msq+ log(offset(effort)), data = crab_red)
+summary(red9)
+
+red10 <- glm.nb(bio_round ~ eg_shoot_msq*eg_mass_msq + log(offset(effort)), data = crab_red)
+summary(red10)
+
+#Create list of models
+red_models <- list(red1,red2,red3,red4,red5,red6,red7,red8,red9,red10)
+names(red_models) <- c("~sea otter density + shoot density + seagrass biomass", "~sea otter_density + seagrass biomass", "~sea otter density + shoot density", "~shoot density + seagrass biomass", "~sea otter density", "~shoot density", "~seagrass biomass", "~sea otter density*shoot density", "~sea otter density*seagrass biomass", "~shoot density*seagrass biomass" )
+#Calculate AICc
+library(MuMIn)
+AICc(red1);AICc(red2);AICc(red3);AICc(red4);AICc(red5);AICc(red6);AICc(red7);AICc(red8);AICc(red9);AICc(red10)
+#Calculate delta-AIC, and AIC weights
+library(AICcmodavg)
+aictab(red_models, modnames = names(red_models),
+second.ord = TRUE, nobs = NULL, sort = TRUE)
+```
+
+#T. cheiragonus
+```{r}
+#Run zero inflated GLMs
+hel1 <- glm.nb(bio_round ~ otter_density + eg_shoot_msq + eg_mass_msq + log(offset(effort)), data = crab_hel)
+summary(hel1)
+
+hel2 <- glm.nb(bio_round ~ otter_density  + eg_mass_msq + log(offset(effort)), data = crab_hel)
+summary(hel2)
+
+hel3 <- glm.nb(bio_round ~ otter_density + eg_shoot_msq + log(offset(effort)), data = crab_hel)
+summary(hel3)
+
+hel4 <- glm.nb(bio_round ~ eg_shoot_msq + eg_mass_msq + log(offset(effort)), data = crab_hel)
+summary(hel4)
+
+hel5 <- glm.nb(bio_round ~ otter_density + log(offset(effort)), data = crab_hel)
+summary(hel5)
+
+hel6 <- glm.nb(bio_round ~ eg_shoot_msq + log(offset(effort)), data = crab_hel)
+summary(hel6)
+
+hel7 <- glm.nb(bio_round ~ eg_mass_msq + log(offset(effort)), data = crab_hel)
+summary(hel7)
+
+hel8 <- glm.nb(bio_round ~ otter_density*eg_shoot_msq + log(offset(effort)), data = crab_hel)
+summary(hel8)
+
+hel9 <- glm.nb(bio_round ~ otter_density*eg_mass_msq + log(offset(effort)), data = crab_hel)
+summary(hel9)
+
+hel10 <- glm.nb(bio_round ~ eg_shoot_msq*eg_mass_msq + log(offset(effort)), data = crab_hel)
+summary(hel10)
+
+#Create list of models
+hel_models <- list(hel1,hel2,hel3,hel4,hel5,hel6,hel7,hel8,hel10)
+names(hel_models) <- c("~sea otter density + shoot density + seagrass biomass", "~sea otter_density + seagrass biomass", "~sea otter density + shoot density", "~shoot density + seagrass biomass", "~sea otter density", "~shoot density", "~seagrass biomass", "~sea otter density*shoot density", "~shoot density*seagrass biomass" )
+#Calculate AICc
+library(MuMIn)
+AICc(hel1);AICc(hel2);AICc(hel3);AICc(hel4);AICc(hel5);AICc(hel6);AICc(hel7);AICc(hel8);AICc(hel9);AICc(hel10)
+#Calculate delta-AIC, and AIC weights
+library(AICcmodavg)
+aictab(hel_models, modnames = names(hel_models),
+second.ord = TRUE, nobs = NULL, sort = TRUE)
+```
+
