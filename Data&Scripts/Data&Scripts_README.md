@@ -51,6 +51,6 @@ _csv file including T. cheiragonus abundance data from Prince of Wales Island si
 
 _csv file including seagrass shoot density data from Prince of Wales Island sites 2017-2020 including shoot density, standard error, site code, and year
 
-* [**"crab_abundance_seagrass.rmd"**](Crab_Abundance_Seagrass/crab_abundance_seagrass.csv)
+* [**"crab_abundance_seagrass.rmd"**](Crab_Abundance_Seagrass/crab_abundance_seagrass.Rmd)
 
 _R script for analyzing and plotting crab abundance by species against sea otter density and seagrass biometrics inclusing shoot density
