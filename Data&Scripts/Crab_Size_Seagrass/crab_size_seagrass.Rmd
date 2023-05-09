@@ -18,52 +18,43 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(ggpubr)
+library(visreg)
+
 ```
 
-#Read in crab and shoot density data
+#Read in crab, otter, and shoot density data
 ```{r}
-crab <- read.csv("clean_crab_otter_size_data_all_years.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) #eventually source from KNB
+crab <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Crab_Size_Seagrass/crabsize_otterdensity_data.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) 
 
-shoot <- read.csv("shoot_density.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) #eventually source from KNB
-
-bio <- read.csv("seagrass_biomass.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) #eventually source from KNB
+shoot <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Crab_Size_Seagrass/shoot_density.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
 ```
 
-#Clean up "shoot" df, calculate m2 shoot-density, and join with size data
+#Clean up "shoot" df, calculate m2 shoot-density, calculate sea otter presence, and join with size data
 ```{r}
-#clean up shoot df
+#calculate shoot per meter squared
 shoot <-
   shoot %>% 
-  rename(year = ï..year) %>% 
   mutate(eg_shoot_msq = shoot_dens*4)
-
-#Clean up sg biomass df
-bio <-
-  bio %>% 
-  dplyr::select(-c("X", "site_2019", "bay_code", "X.1", "X.2", "X.3"))
 
 #Join data
 crab <- left_join(crab, shoot, by= "sec_key")
-crab <- left_join(crab, bio, by= "sec_key")
 
+#clean up and make year a factor
 crab <-
   crab %>% 
-  dplyr::select(-c("bay_code.y", "bay_code.x", "sex", "shoot_dens", "shoot_dens_se")) %>% 
-  rename(eg_mass_msq = avg_biom_msq)
-```
+  dplyr::select(-c("bay_code.y", "bay_code.x", "sex", "shoot_dens", "shoot_dens_se"))
 
-#Fill in year column
-```{r}
-crab$year<- NA
-crab$year[1:120] <- 2020
-crab$year[121:381] <- 2017
-crab$year[382:490] <- 2018
-crab$year[491:754] <- 2019
+#Sea otter presence
+crab <- crab %>% 
+  mutate(otter_presence = if_else(otter_density == 0, "Absent", 'Present'))
+
+crab$year <- as.factor(crab$year)
+crab$otter_presence <- as.factor(crab$otter_presence)
+str(crab)
 ```
 
 #Remove NAs from where there is no shoot density data
 ```{r}
-crab <- crab[!is.na(crab$eg_mass_msq), ]
 crab <- crab[!is.na(crab$eg_shoot_msq), ]
 ```
 
@@ -84,6 +75,7 @@ crab_red <-
 crab_hel <-
   crab %>% 
   filter(SpCode %in% c("CRABHEL"))
+
 ```
 
 #Filter for correct years for C. magister and M. gracilis
@@ -149,6 +141,7 @@ d.size
 g.size
 r.size
 h.size
+
 #arrange all plots 
 size.shoot <- gridExtra::grid.arrange(d.size, g.size, r.size, h.size,  ncol=1, nrow = 4)
 
@@ -183,92 +176,46 @@ ggplot(data = crab_hel, aes(x = sqrt(eg_shoot_msq), y= sqrt(carapace_width_mm)))
   theme(text = element_text(size=15))
 ```
 
-#Data visualization with untransformed data, size~ sg biomass
-```{r}
-#C. magister==================================================
-d.size <- ggplot(data = crab_dun, aes(x = eg_mass_msq, y= carapace_width_mm))+
-  geom_point() +
-  theme_classic()+
- geom_smooth(method = "glm", formula = y~x,
-                      method.args = list(family = gaussian(link = 'log')))+
-  #labs(x= expression(Seagrass~biomass~(g.~m^-2)), y= "Carapace width (mm)", title=expression("A)"))+
-   theme(text = element_text(size=15), axis.title = element_blank())
-#M. gracilis =====================================================
-g.size <- ggplot(data = crab_gra, aes(x = eg_mass_msq, y= carapace_width_mm))+
-  geom_point() +
-  theme_classic()+
-  geom_smooth(method = "glm", formula = y~x,
-                      method.args = list(family = gaussian(link = 'log')))+
-  #labs(x= expression(Seagrass~biomass~(g.~m^-2)), y= "Carapace width (mm)", title=expression("B)"))+
-    theme(text = element_text(size=15), axis.title = element_blank())
-#C. productus=====================================================
-r.size <- ggplot(data = crab_red, aes(x = eg_mass_msq, y= carapace_width_mm))+
-  geom_point() +
-  theme_classic()+
-  geom_smooth(method = "glm", formula = y~x,
-                      method.args = list(family = gaussian(link = 'log')))+
-  #labs(x= expression(Seagrass~biomass~(g.~m^-2)), y= "Carapace width (mm)", title=expression("C)"))+
-    theme(text = element_text(size=15), axis.title = element_blank())
-#T. cheiragonus======================================================
-h.size <- ggplot(data = crab_hel, aes(x = eg_mass_msq, y= carapace_width_mm))+
-  geom_point() +
-  theme_classic()+
-  geom_smooth(method = "glm", formula = y~x,
-                      method.args = list(family = gaussian(link = 'log')))+
-  #labs(x= expression(Seagrass~biomass~(g.~m^-2)), y= "Carapace width (mm)", title=expression("D)"))+
-   theme(text = element_text(size=15), axis.title = element_blank())
-
-d.size
-g.size
-r.size
-h.size
-
-#arrange all plots 
-size <- gridExtra::grid.arrange(d.size, g.size, r.size, h.size,  ncol=1, nrow = 4)
-
-annotate_figure(size, bottom = text_grob(expression(Seagrass~biomass~(g.~m^-2)), size = 20),left = text_grob("Carapace width (mm)", rot=90, size = 20))
-```
-
 #Data analysis
 #C. magister
 ```{r}
 #Run GLMs
-dun1 <- glm(carapace_width_mm ~ otter_density + eg_shoot_msq + eg_mass_msq, data = crab_dun, family = gaussian(link = "log"))
+dun1 <- glm(carapace_width_mm ~ otter_presence + eg_shoot_msq + year, data = crab_dun, family = gaussian(link = "log"))
 summary(dun1)
 
-dun2 <- glm(carapace_width_mm ~ otter_density  + eg_mass_msq, data = crab_dun, family = gaussian(link = "log"))
+dun2 <- glm(carapace_width_mm ~ otter_presence  + year, data = crab_dun, family = gaussian(link = "log"))
 summary(dun2)
 
-dun3 <- glm(carapace_width_mm ~ otter_density + eg_shoot_msq, data = crab_dun,  family = gaussian(link = "log"))
+dun3 <- glm(carapace_width_mm ~ otter_presence + eg_shoot_msq, data = crab_dun,  family = gaussian(link = "log"))
 summary(dun3)
 
-dun4 <- glm(carapace_width_mm ~ eg_shoot_msq + eg_mass_msq, data = crab_dun,  family = gaussian(link = "log"))
+dun4 <- glm(carapace_width_mm ~ eg_shoot_msq + year, data = crab_dun,  family = gaussian(link = "log"))
 summary(dun4)
 
-dun5 <- glm(carapace_width_mm ~ otter_density, data = crab_dun, family = gaussian(link = "log"))
+dun5 <- glm(carapace_width_mm ~ otter_presence, data = crab_dun, family = gaussian(link = "log"))
 summary(dun5)
 
 dun6 <- glm(carapace_width_mm ~ eg_shoot_msq, data = crab_dun, family = gaussian(link = "log"))
 summary(dun6)
 
-dun7 <- glm(carapace_width_mm ~ eg_mass_msq, data = crab_dun,  family = gaussian(link = "log"))
+dun7 <- glm(carapace_width_mm ~ year, data = crab_dun,  family = gaussian(link = "log"))
 summary(dun7)
 
-dun8 <- glm(carapace_width_mm ~ otter_density*eg_shoot_msq, data = crab_dun,  family = gaussian(link = "log"))
+dun8 <- glm(carapace_width_mm ~ otter_presence*eg_shoot_msq, data = crab_dun,  family = gaussian(link = "log"))
 summary(dun8)
 
-dun9 <- glm(carapace_width_mm ~ otter_density*eg_mass_msq, data = crab_dun,  family = gaussian(link = "log"))
+dun9 <- glm(carapace_width_mm ~ otter_presence*year, data = crab_dun,  family = gaussian(link = "log"))
 summary(dun9)
 
-dun10 <- glm(carapace_width_mm ~ eg_shoot_msq*eg_mass_msq, data = crab_dun,  family = gaussian(link = "log"))
+dun10 <- glm(carapace_width_mm ~ eg_shoot_msq*year, data = crab_dun,  family = gaussian(link = "log"))
 summary(dun10)
 
 #Create list of models
-dun_models <- list(dun1,dun2,dun3,dun4,dun5,dun6,dun7,dun8,dun9)
-names(dun_models) <- c("~sea otter density + shoot density + seagrass biomass", "~sea otter_density + seagrass biomass", "~sea otter density + shoot density", "~shoot density + seagrass biomass", "~sea otter density", "~shoot density", "~seagrass biomass", "~sea otter density*shoot density", "~sea otter density*seagrass biomass" )
+dun_models <- list(dun1,dun2,dun3,dun4,dun5,dun6,dun7,dun8,dun9,dun10)
+names(dun_models) <- c("~sea otter presence + shoot density + year", "~sea otter_presence + year", "~sea otter presence + shoot density", "~shoot density + year", "~sea otter presence", "~shoot density", "~year", "~sea otter presence*shoot density", "~sea otter presence*year", "~shoot density*year" )
 #Calculate AICc
 library(MuMIn)
-AICc(dun1);AICc(dun2);AICc(dun3);AICc(dun4);AICc(dun5);AICc(dun6);AICc(dun7);AICc(dun8);AICc(dun9)
+AICc(dun1);AICc(dun2);AICc(dun3);AICc(dun4);AICc(dun5);AICc(dun6);AICc(dun7);AICc(dun8);AICc(dun9);AICc(dun10)
 #Calculate delta-AIC, and AIC weights
 library(AICcmodavg)
 aictab(dun_models, modnames = names(dun_models),
@@ -278,42 +225,42 @@ second.ord = TRUE, nobs = NULL, sort = TRUE)
 #M. gracilis
 ```{r}
 #Run GLMs
-gra1 <- glm(carapace_width_mm ~ otter_density + eg_shoot_msq + eg_mass_msq, data = crab_gra, family = gaussian(link = "log"))
+gra1 <- glm(carapace_width_mm ~ otter_presence + eg_shoot_msq + year, data = crab_gra, family = gaussian(link = "log"))
 summary(gra1)
 
-gra2 <- glm(carapace_width_mm ~ otter_density  + eg_mass_msq, data = crab_gra, family = gaussian(link = "log"))
+gra2 <- glm(carapace_width_mm ~ otter_presence  + year, data = crab_gra, family = gaussian(link = "log"))
 summary(gra2)
 
-gra3 <- glm(carapace_width_mm ~ otter_density + eg_shoot_msq, data = crab_gra,  family = gaussian(link = "log"))
+gra3 <- glm(carapace_width_mm ~ otter_presence + eg_shoot_msq, data = crab_gra,  family = gaussian(link = "log"))
 summary(gra3)
 
-gra4 <- glm(carapace_width_mm ~ eg_shoot_msq + eg_mass_msq, data = crab_gra,  family = gaussian(link = "log"))
+gra4 <- glm(carapace_width_mm ~ eg_shoot_msq + year, data = crab_gra,  family = gaussian(link = "log"))
 summary(gra4)
 
-gra5 <- glm(carapace_width_mm ~ otter_density, data = crab_gra, family = gaussian(link = "log"))
+gra5 <- glm(carapace_width_mm ~ otter_presence, data = crab_gra, family = gaussian(link = "log"))
 summary(gra5)
 
 gra6 <- glm(carapace_width_mm ~ eg_shoot_msq, data = crab_gra, family = gaussian(link = "log"))
 summary(gra6)
 
-gra7 <- glm(carapace_width_mm ~ eg_mass_msq, data = crab_gra,  family = gaussian(link = "log"))
+gra7 <- glm(carapace_width_mm ~ year, data = crab_gra,  family = gaussian(link = "log"))
 summary(gra7)
 
-gra8 <- glm(carapace_width_mm ~ otter_density*eg_shoot_msq, data = crab_gra,  family = gaussian(link = "log"))
+gra8 <- glm(carapace_width_mm ~ otter_presence*eg_shoot_msq, data = crab_gra,  family = gaussian(link = "log"))
 summary(gra8)
 
-gra9 <- glm(carapace_width_mm ~ otter_density*eg_mass_msq, data = crab_gra,  family = gaussian(link = "log"))
+gra9 <- glm(carapace_width_mm ~ otter_presence*year, data = crab_gra,  family = gaussian(link = "log"))
 summary(gra9)
 
-gra10 <- glm(carapace_width_mm ~ eg_shoot_msq*eg_mass_msq, data = crab_gra,  family = gaussian(link = "log"))
+gra10 <- glm(carapace_width_mm ~ eg_shoot_msq*year, data = crab_gra,  family = gaussian(link = "log"))
 summary(gra10)
 
 #Create list of models
-gra_models <- list(gra1,gra2,gra3,gra4,gra5,gra6,gra7,gra8,gra9)
-names(gra_models) <- c("~sea otter density + shoot density + seagrass biomass", "~sea otter_density + seagrass biomass", "~sea otter density + shoot density", "~shoot density + seagrass biomass", "~sea otter density", "~shoot density", "~seagrass biomass", "~sea otter density*shoot density", "~sea otter density*seagrass biomass")
+gra_models <- list(gra1,gra2,gra3,gra4,gra5,gra6,gra7,gra8,gra9,gra10)
+names(gra_models) <- c("~sea otter density + shoot density + year", "~sea otter_presence + year", "~sea otter density + shoot density", "~shoot density + year", "~sea otter density", "~shoot density", "~year", "~sea otter density*shoot density", "~sea otter density*year", "~shoot density*year" )
 #Calculate AICc
 library(MuMIn)
-AICc(gra1);AICc(gra2);AICc(gra3);AICc(gra4);AICc(gra5);AICc(gra6);AICc(gra7);AICc(gra8);AICc(gra9)
+AICc(gra1);AICc(gra2);AICc(gra3);AICc(gra4);AICc(gra5);AICc(gra6);AICc(gra7);AICc(gra8);AICc(gra9);AICc(gra10)
 #Calculate delta-AIC, and AIC weights
 library(AICcmodavg)
 aictab(gra_models, modnames = names(gra_models),
@@ -323,45 +270,42 @@ second.ord = TRUE, nobs = NULL, sort = TRUE)
 #C. productus
 ```{r}
 #Run GLMs
-red1 <- glm(carapace_width_mm ~ otter_density + eg_shoot_msq + eg_mass_msq, data = crab_red, family = gaussian(link = "log"))
+red1 <- glm(carapace_width_mm ~ otter_presence + eg_shoot_msq + year, data = crab_red, family = gaussian(link = "log"))
 summary(red1)
 
-red2 <- glm(carapace_width_mm ~ otter_density  + eg_mass_msq, data = crab_red, family = gaussian(link = "log"))
+red2 <- glm(carapace_width_mm ~ otter_presence  + year, data = crab_red, family = gaussian(link = "log"))
 summary(red2)
 
-red3 <- glm(carapace_width_mm ~ otter_density + eg_shoot_msq, data = crab_red,  family = gaussian(link = "log"))
+red3 <- glm(carapace_width_mm ~ otter_presence + eg_shoot_msq, data = crab_red,  family = gaussian(link = "log"))
 summary(red3)
 
-red4 <- glm(carapace_width_mm ~ eg_shoot_msq + eg_mass_msq, data = crab_red,  family = gaussian(link = "log"))
+red4 <- glm(carapace_width_mm ~ eg_shoot_msq + year, data = crab_red,  family = gaussian(link = "log"))
 summary(red4)
 
-red5 <- glm(carapace_width_mm ~ otter_density, data = crab_red, family = gaussian(link = "log"))
+red5 <- glm(carapace_width_mm ~ otter_presence, data = crab_red, family = gaussian(link = "log"))
 summary(red5)
 
 red6 <- glm(carapace_width_mm ~ eg_shoot_msq, data = crab_red, family = gaussian(link = "log"))
 summary(red6)
 
-red7 <- glm(carapace_width_mm ~ eg_mass_msq, data = crab_red,  family = gaussian(link = "log"))
+red7 <- glm(carapace_width_mm ~ year, data = crab_red,  family = gaussian(link = "log"))
 summary(red7)
 
-red8 <- glm(carapace_width_mm ~ otter_density*eg_shoot_msq, data = crab_red,  family = gaussian(link = "log"))
+red8 <- glm(carapace_width_mm ~ otter_presence*eg_shoot_msq, data = crab_red,  family = gaussian(link = "log"))
 summary(red8)
 
-red9 <- glm(carapace_width_mm ~ otter_density*eg_mass_msq, data = crab_red,  family = gaussian(link = "log"))
+red9 <- glm(carapace_width_mm ~ otter_presence*year, data = crab_red,  family = gaussian(link = "log"))
 summary(red9)
 
-red10 <- glm(carapace_width_mm ~ (eg_shoot_msq)*eg_mass_msq, data = crab_red,  family = gaussian(link = "log"))
-summary(red10)
-
-red10 <- glm(carapace_width_mm ~ otter_density*eg_mass_msq + eg_shoot_msq, data = crab_red,  family = gaussian(link = "log"))
+red10 <- glm(carapace_width_mm ~ eg_shoot_msq*year, data = crab_red,  family = gaussian(link = "log"))
 summary(red10)
 
 #Create list of models
-red_models <- list(red1,red2,red3,red4,red5,red6,red7,red8,red9)
-names(red_models) <- c("~sea otter density + shoot density + seagrass biomass", "~sea otter_density + seagrass biomass", "~sea otter density + shoot density", "~shoot density + seagrass biomass", "~sea otter density", "~shoot density", "~seagrass biomass", "~sea otter density*shoot density", "~sea otter density*seagrass biomass")
+red_models <- list(red1,red2,red3,red4,red5,red6,red7,red8,red9,red10)
+names(red_models) <- c("~sea otter density + shoot density + year", "~sea otter_presence + year", "~sea otter density + shoot density", "~shoot density + year", "~sea otter density", "~shoot density", "~year", "~sea otter density*shoot density", "~sea otter density*year", "~shoot density*year" )
 #Calculate AICc
 library(MuMIn)
-AICc(red1);AICc(red2);AICc(red3);AICc(red4);AICc(red5);AICc(red6);AICc(red7);AICc(red8);AICc(red9)
+AICc(red1);AICc(red2);AICc(red3);AICc(red4);AICc(red5);AICc(red6);AICc(red7);AICc(red8);AICc(red9);AICc(red10)
 #Calculate delta-AIC, and AIC weights
 library(AICcmodavg)
 aictab(red_models, modnames = names(red_models),
@@ -371,42 +315,42 @@ second.ord = TRUE, nobs = NULL, sort = TRUE)
 #T. cheiragonus
 ```{r}
 #Run GLMs
-hel1 <- glm(carapace_width_mm ~ otter_density + eg_shoot_msq + eg_mass_msq, data = crab_hel, family = gaussian(link = "log"))
+hel1 <- glm(carapace_width_mm ~ otter_presence + eg_shoot_msq + year, data = crab_hel, family = gaussian(link = "log"))
 summary(hel1)
 
-hel2 <- glm(carapace_width_mm ~ otter_density  + eg_mass_msq, data = crab_hel, family = gaussian(link = "log"))
+hel2 <- glm(carapace_width_mm ~ otter_presence  + year, data = crab_hel, family = gaussian(link = "log"))
 summary(hel2)
 
-hel3 <- glm(carapace_width_mm ~ otter_density + eg_shoot_msq, data = crab_hel,  family = gaussian(link = "log"))
+hel3 <- glm(carapace_width_mm ~ otter_presence + eg_shoot_msq, data = crab_hel,  family = gaussian(link = "log"))
 summary(hel3)
 
-hel4 <- glm(carapace_width_mm ~ eg_shoot_msq + eg_mass_msq, data = crab_hel,  family = gaussian(link = "log"))
+hel4 <- glm(carapace_width_mm ~ eg_shoot_msq + year, data = crab_hel,  family = gaussian(link = "log"))
 summary(hel4)
 
-hel5 <- glm(carapace_width_mm ~ otter_density, data = crab_hel, family = gaussian(link = "log"))
+hel5 <- glm(carapace_width_mm ~ otter_presence, data = crab_hel, family = gaussian(link = "log"))
 summary(hel5)
 
 hel6 <- glm(carapace_width_mm ~ eg_shoot_msq, data = crab_hel, family = gaussian(link = "log"))
 summary(hel6)
 
-hel7 <- glm(carapace_width_mm ~ eg_mass_msq, data = crab_hel,  family = gaussian(link = "log"))
+hel7 <- glm(carapace_width_mm ~ year, data = crab_hel,  family = gaussian(link = "log"))
 summary(hel7)
 
-hel8 <- glm(carapace_width_mm ~ otter_density*eg_shoot_msq, data = crab_hel,  family = gaussian(link = "log"))
+hel8 <- glm(carapace_width_mm ~ otter_presence*eg_shoot_msq, data = crab_hel,  family = gaussian(link = "log"))
 summary(hel8)
 
-hel9 <- glm(carapace_width_mm ~ otter_density*eg_mass_msq, data = crab_hel,  family = gaussian(link = "log"))
+hel9 <- glm(carapace_width_mm ~ otter_presence*year, data = crab_hel,  family = gaussian(link = "log"))
 summary(hel9)
 
-hel10 <- glm(carapace_width_mm ~ eg_shoot_msq*eg_mass_msq, data = crab_hel,  family = gaussian(link = "log"))
+hel10 <- glm(carapace_width_mm ~ eg_shoot_msq*year, data = crab_hel,  family = gaussian(link = "log"))
 summary(hel10)
 
 #Create list of models
-hel_models <- list(hel1,hel2,hel3,hel4,hel5,hel6,hel7,hel8,hel9)
-names(hel_models) <- c("~sea otter density + shoot density + seagrass biomass", "~sea otter_density + seagrass biomass", "~sea otter density + shoot density", "~shoot density + seagrass biomass", "~sea otter density", "~shoot density", "~seagrass biomass", "~sea otter density*shoot density", "~sea otter density*seagrass biomass")
+hel_models <- list(hel1,hel2,hel3,hel4,hel5,hel6,hel7,hel8,hel9,hel10)
+names(hel_models) <- c("~sea otter density + shoot density + year", "~sea otter_presence + year", "~sea otter density + shoot density", "~shoot density + year", "~sea otter density", "~shoot density", "~year", "~sea otter density*shoot density", "~sea otter density*year", "~shoot density*year" )
 #Calculate AICc
 library(MuMIn)
-AICc(hel1);AICc(hel2);AICc(hel3);AICc(hel4);AICc(hel5);AICc(hel6);AICc(hel7);AICc(hel8);AICc(hel9)
+AICc(hel1);AICc(hel2);AICc(hel3);AICc(hel4);AICc(hel5);AICc(hel6);AICc(hel7);AICc(hel8);AICc(hel9);AICc(hel10)
 #Calculate delta-AIC, and AIC weights
 library(AICcmodavg)
 aictab(hel_models, modnames = names(hel_models),
@@ -416,16 +360,16 @@ second.ord = TRUE, nobs = NULL, sort = TRUE)
 #Visreg plots for all species and predictor variables
 ```{r}
 #visreg dung
-fig.dun1 <- visreg(dun9, "otter_density", band= TRUE, scale = "response", gg = TRUE, rug=FALSE)+
-   geom_point(data = crab_dun, aes(otter_density, carapace_width_mm))+
+fig.dun1 <- visreg(dun10, "eg_shoot_msq", by="year", band= TRUE, scale = "response", gg = TRUE, rug=FALSE)+
+   geom_point(data = crab_dun, aes(eg_shoot_msq, carapace_width_mm))+
    theme_classic()+
   labs(x= expression(Sea~otter~density~(ind.~km^-2)), y= "Crab size", title=expression("A)"))+
- theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())+
-  ylim(0,200)+
-  xlim(0,30)
+ theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())
+
+fig.dun1
  
-fig.dun2 <- visreg(dun9, "eg_mass_msq", band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
-  geom_point(data = crab_dun, aes(eg_mass_msq, carapace_width_mm))+
+fig.dun2 <- visreg(dun10, "year", band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
+  geom_point(data = crab_dun, aes(year, carapace_width_mm))+
    theme_classic()+
   labs(x= expression(Seagrass~biomass~(g.~m^-2)), y= "Crab size", title=expression("B)"))+
   theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())+

@@ -6,6 +6,17 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
+This script is associated with the manuscript "Effect of Sea Otter (Enhydra lutris) Predation and Habitat Structure on Nearshore Crab Assemblages in Southeast Alaska" by Rebecca Cates, Wendel Raymond, Lia Domke, and Ginny Eckert. This manuscript has been adapted from R.Cates master's thesis at the University of Alaska Fairbanks College of Fisheries and Ocean Science and is associated with the large, interdisciplinary project "APECS".
+
+Crab abundance data were collected along the western coastline of Prince of Wales island with sites ranging 93 km from the most southern site in Dunbar Inlet up to the most northern site in Naukati Bay. Data was collected July to August, 2017-2020. Four strings with 2 pots each were were set at 21 different eelgrass sites. Pots soaked for ~24 hours before being pulled up to identify, measure and sex the contents of the pot. Abundance data was transformed to cpue and bpue data based on pot effort.
+
+In addition, sea otter density data and seagrass biometric data was collected at these same sites from July through August, 2017-2020. Sea otters were counted via boat based surveys 2 nautical miles around the seagrass sites. Multiple individuals with binoculars were stationed at all angles from a 22' dual engine North River as the boat proceeded at a max speed of 8 knots. Sea otters were noted on the app "INAVX" with waypoints. Density per site was calculated in the script "Sea_otter_impact_index".Seagrass shoot density data was collected in 2017, 2018, and 2020 with eight 0.5-m × 0.5-m quadrats were evenly spaced every 12 m along a 100-m transect placed approximately -0.5 m relative to MLLW (Raymond et al. 2021). Eelgrass shoots were counted in each quadrat. Shoot density was then averaged across the eight quadrats per site. At each site in 2019, five 0.5-m x 0.5-m quadrats were randomly placed roughly 5-m linear distance below the upper edge of the eelgrass bed at all sites. Eelgrass shoots were counted in each quadrat and averaged.
+
+Goal of this script :
+1) Check for errors in data
+2) Check for accuracy of data type and fix if needed (e.g., factor, numeric, character)
+3) Analyze crab biomAA, sea otter, and habitat data for all species
+4) Visualize data
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -17,19 +28,23 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(ggpubr)
-library(corrgram)
-library(mgcv)
 library(MASS)
 library(pscl)
+library(visreg)
+library(corrgram)
+library(corrplot)
+library(ggcorrplot)
+library(MuMIn)
+library(AICcmodavg)
+library(ggbreak)
+library(grid)
 ```
 
 #Read in crab and shoot density data
 ```{r}
-crab <- read.csv("crab_biomass.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) #eventually source from KNB
+crab <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Crab_Biomass_Seagrass/crab_biomass.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
 
-shoot <- read.csv("shoot_density.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) #eventually source from KNB
-
-bio <- read.csv("seagrass_biomass.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA")) #eventually source from KNB
+shoot <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Crab_Abundance_Seagrass/shoot_density.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
 ```
 
 #Site level biomass
@@ -43,7 +58,7 @@ crab <-
   distinct()
 ```
 
-#Create effort column for bpue calculations
+#Create effort column analysis
 ```{r}
 crab$effort <- NA
 crab$effort[crab$year == 17]  = 3
@@ -52,36 +67,27 @@ crab$effort[crab$year == 19]  = 4
 crab$effort[crab$year == 20]  = 3
 ```
 
-#Clean up "shoot" df, calculate m2 shoot-density, and join with crab biomass and seagrass biomass df
-#rename columns for clarity
+#Calculate m2 shoot-density, and join with crab biomass df
 ```{r}
 #Clean up shoot density df
 shoot <-
   shoot %>% 
-  rename(year = ï..year) %>% 
   mutate(shoot_m2 = shoot_dens*4)
-
-#Clean up sg biomass df
-bio <-
-  bio %>% 
-  dplyr::select(-c("X", "site_2019", "bay_code", "X.1", "X.2", "X.3"))
 
 #Join dataframes
 crab <- left_join(crab, shoot, by= "sec_key")
-crab <- left_join(crab, bio, by= "sec_key")
 
 #Clean up final df, select for needed columns
 crab <-
   crab %>% 
   dplyr::select(-c("year.y", "bay_code", "shoot_dens", "shoot_dens_se")) %>% 
-  rename(year = year.x, eg_mass_msq = avg_biom_msq, eg_shoot_msq = shoot_m2)
+  rename(year = year.x, eg_shoot_msq = shoot_m2)
 
 
 ```
 
 #Remove NAs from where there is no shoot density data
 ```{r}
-crab <- crab[!is.na(crab$eg_mass_msq), ]
 crab <- crab[!is.na(crab$eg_shoot_msq), ]
 ```
 
@@ -146,6 +152,35 @@ crab_hel$bio_round <- NA
 crab_hel$bio_round <- round(crab_hel$biomass)
 ```
 
+#Year to factor, biomass to integer
+```{r}
+crab_dun <-
+  crab_dun %>% 
+  mutate_at(vars(year), 
+            list(factor))
+crab_dun$bio_round <- as.integer(crab_dun$bio_round)
+
+crab_gra <-
+  crab_gra %>% 
+  mutate_at(vars(year), 
+            list(factor))
+crab_gra$bio_round <- as.integer(crab_gra$bio_round)
+
+crab_red <-
+  crab_red %>% 
+  mutate_at(vars(year), 
+            list(factor))
+crab_red$bio_round <- as.integer(crab_red$bio_round)
+
+crab_hel <-
+  crab_hel %>% 
+  mutate_at(vars(year), 
+            list(factor))
+crab_hel$bio_round <- as.integer(crab_hel$bio_round)
+
+
+str(crab_dun)
+```
 #Corrgram for independent variables
 ```{r}
 #correlations
@@ -179,16 +214,16 @@ corrgram(crab_hel[,c(1,4:7)],
 
 #VIF correlation check 
 ```{r}
-dun1 <- lm(biomass~otter_density+eg_shoot_msq+eg_mass_msq, data = crab_dun)
+dun1 <- lm(biomass~otter_density+eg_shoot_msq, data = crab_dun)
 car::vif(dun1)
 
-gra1 <- lm(biomass~otter_density+eg_shoot_msq+eg_mass_msq, data = crab_gra)
+gra1 <- lm(biomass~otter_density+eg_shoot_msq, data = crab_gra)
 car::vif(gra1)
 
-red1 <- lm(biomass~otter_density+eg_shoot_msq+eg_mass_msq, data = crab_red)
+red1 <- lm(biomass~otter_density+eg_shoot_msq, data = crab_red)
 car::vif(red1)
 
-hel1 <- lm(biomass~otter_density+eg_shoot_msq+eg_mass_msq, data = crab_hel)
+hel1 <- lm(biomass~otter_density+eg_shoot_msq, data = crab_hel)
 car::vif(hel1)
 ```
 
@@ -201,6 +236,7 @@ d <- ggplot(data = crab_dun, aes(x = eg_shoot_msq, y= bio_round))+
   geom_smooth(method = "glm.nb", formula = y~x)+
   labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab biomass (g)", title=expression("A)"~paste(italic("C. magister,")~"data 2019-2020")))+
    theme(axis.title = element_blank(), text = element_text(size=15))
+d
 #M. gracilis =====================================================
 g <- ggplot(data = crab_gra, aes(x = eg_shoot_msq, y= bio_round))+
   geom_point() +
@@ -208,6 +244,7 @@ g <- ggplot(data = crab_gra, aes(x = eg_shoot_msq, y= bio_round))+
   geom_smooth(method = "glm.nb", formula = y~x)+
   labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab biomass (g)", title=expression(~"B)"~paste(italic("M. gracilis,")~"data 2019-2020")))+
     theme(axis.title = element_blank(), text = element_text(size=15))
+g
 #C. productus=====================================================
 r <- ggplot(data = crab_red, aes(x = eg_shoot_msq, y= bio_round))+
   geom_point() +
@@ -215,6 +252,7 @@ r <- ggplot(data = crab_red, aes(x = eg_shoot_msq, y= bio_round))+
   geom_smooth(method = "glm.nb", formula = y~x)+
   labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab biomass (g)", title=expression(~"C)"~paste(italic("C. productus,")~"data 2017-2020")))+
     theme(axis.title = element_blank(), text = element_text(size=15))
+r
 #T. cheiragonus======================================================
 h <- ggplot(data = crab_hel, aes(x = eg_shoot_msq, y= bio_round))+
   geom_point() +
@@ -222,11 +260,8 @@ h <- ggplot(data = crab_hel, aes(x = eg_shoot_msq, y= bio_round))+
   geom_smooth(method = "glm.nb", formula = y~x)+
   labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab biomass (g)", title=expression(~"D)"~paste(italic("T. cheiragonus,")~"data 2017-2020")))+
     theme(axis.title = element_blank(), text = element_text(size=15))
-
-d
-g
-r
 h
+
 #arrange all plots 
 mass <- gridExtra::grid.arrange(d, g, r, h,  ncol=2, nrow = 2)
 
@@ -261,80 +296,38 @@ ggplot(data = crab_hel, aes(x = sqrt(eg_shoot_msq), y= sqrt(bio_round)))+
   theme(text = element_text(size=15))
 ```
 
-#Data visualization with untransformed data, crab mass ~ sg mass
-```{r}
-#C. magister==================================================
-d <- ggplot(data = crab_dun, aes(x = eg_mass_msq, y= bio_round))+
-  geom_point() +
-  theme_light()+
- geom_smooth(method = "glm.nb", formula = y~x)+
-  labs(x= expression(Seagrass~biomass~(g.~m^-2)), y= "Crab biomass (g)", title=expression("A)"~paste(italic("C. magister,")~"data 2019-2020")))+
-  theme(axis.title = element_blank(), text = element_text(size=15))
-#M. gracilis =====================================================
-g <- ggplot(data = crab_gra, aes(x = eg_mass_msq, y= bio_round))+
-  geom_point() +
-  theme_light()+
-  geom_smooth(method = "glm.nb", formula = y~x)+
-  labs(x= expression(Seagrass~biomass~(g.~m^-2)),  y= "Crab biomass (g)", title=expression(~"B)"~paste(italic("M. gracilis,")~"data 2019-2020")))+
-    theme(axis.title = element_blank(), text = element_text(size=15))
-#C. productus=====================================================
-r <- ggplot(data = crab_red, aes(x = eg_mass_msq, y= bio_round))+
-  geom_point() +
-  theme_light()+
-  geom_smooth(method = "glm.nb", formula = y~x)+
-  labs(x= expression(Seagrass~biomass~(g.~m^-2)),  y= "Crab biomass (g)", title=expression(~"C)"~paste(italic("C. productus,")~"data 2017-2020")))+
-    theme(axis.title = element_blank(), text = element_text(size=15))
-#T. cheiragonus======================================================
-h <- ggplot(data = crab_hel, aes(x = eg_mass_msq, y= bio_round))+
-  geom_point() +
-  theme_light()+
-  geom_smooth(method = "glm.nb", formula = y~x)+
-  labs(x= expression(Seagrass~biomass~(g.~m^-2)),  y= "Crab biomass (g)", title=expression(~"D)"~paste(italic("T. cheiragonus,")~"data 2017-2020")))+
-    theme(axis.title = element_blank(), text = element_text(size=15))
-
-d
-g
-r
-h
-
-#arrange all plots 
-mass <- gridExtra::grid.arrange(d, g, r, h,  ncol=2, nrow = 2)
-
-annotate_figure(mass, bottom = text_grob(expression(Seagrass~biomass~(g.~m^-2)), size = 20),left = text_grob(expression(Crab~biomass~(biomass.~site^-1)), rot=90, size = 20))
-```
-
 #Data analysis
 #C. magister
 ```{r}
 #Run GLMs
-dun1 <- glm.nb(bio_round ~ otter_density + eg_shoot_msq + eg_mass_msq + log(offset(effort)), data = crab_dun)
+dun1 <- glm.nb(bio_round ~ otter_density + eg_shoot_msq + year, log(offset(effort)), data = crab_dun)
 summary(dun1)
 
-dun2 <- glm.nb(bio_round ~ otter_density  + eg_mass_msq + log(offset(effort)), data = crab_dun)
+dun2 <- glm.nb(bio_round ~ otter_density + log(offset(effort)), data = crab_dun)
 summary(dun2)
 
 dun3 <- glm.nb(bio_round ~ otter_density + eg_shoot_msq + log(offset(effort)), data = crab_dun)
 summary(dun3)
 
-dun4 <- glm.nb(bio_round ~ eg_shoot_msq + eg_mass_msq + log(offset(effort)), data = crab_dun)
+dun4 <- glm.nb(bio_round ~ eg_shoot_msq + year, log(offset(effort)), data = crab_dun)
 summary(dun4)
 
-dun5 <- glm.nb(bio_round ~ otter_density + log(offset(effort)), data = crab_dun)
+dun5 <- glm.nb(bio_round ~ otter_density, log(offset(effort)), data = crab_dun)
 summary(dun5)
 
-dun6 <- glm.nb(bio_round ~ eg_shoot_msq + log(offset(effort)), data = crab_dun)
+dun6 <- glm.nb(bio_round ~ eg_shoot_msq, log(offset(effort)), data = crab_dun)
 summary(dun6)
 
-dun7 <- glm.nb(bio_round ~ eg_mass_msq + log(offset(effort)), data = crab_dun)
+dun7 <- glm.nb(bio_round ~  year, log(offset(effort)), data = crab_dun)
 summary(dun7)
 
-dun8 <- glm.nb(bio_round ~ otter_density*eg_shoot_msq + log(offset(effort)), data = crab_dun)
+dun8 <- glm.nb(bio_round ~ otter_density*eg_shoot_msq, log(offset(effort)), data = crab_dun)
 summary(dun8)
 
-dun9 <- glm.nb(bio_round ~ otter_density*eg_mass_msq+ log(offset(effort)), data = crab_dun)
+dun9 <- glm.nb(bio_round ~ otter_density*year, log(offset(effort)), data = crab_dun)
 summary(dun9)
 
-dun10 <- glm.nb(bio_round ~ eg_shoot_msq*eg_mass_msq + log(offset(effort)), data = crab_dun)
+dun10 <- glm.nb(bio_round ~ eg_shoot_msq*year, log(offset(effort)), data = crab_dun)
 summary(dun10)
 
 #Create list of models
