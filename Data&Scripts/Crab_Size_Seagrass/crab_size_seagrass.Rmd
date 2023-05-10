@@ -31,7 +31,10 @@ library(tidyr)
 library(ggplot2)
 library(ggpubr)
 library(visreg)
-
+library(tidyverse)
+library(gridExtra)
+library(ggthemes)
+library(quotidieR)
 ```
 
 #Read in crab, otter, and shoot density data
@@ -90,10 +93,10 @@ crab_hel <-
 
 ```
 
-#Filter for correct years for C. magister and M. gracilis
+#Filter years for C. magister and M. gracilis, MUTED
 ```{r}
 crab_dun <-
-  crab_dun %>% 
+ crab_dun %>% 
   filter(year %in% c("2019", "2020"))
 
 crab_gra <-
@@ -101,20 +104,12 @@ crab_gra <-
   filter(year %in% c("2019", "2020"))
 ```
 
-
 #Data visualization with untransformed data, size ~ sg shoot
 ```{r}
-
-ggplot(data = crab_hel, aes(x = otter_density, y= carapace_width_mm))+
-  geom_point(size = 3) +
-  theme_classic()+
-  labs(x=expression(Sea~otter~density~(ind.~km^-2)), y= "Crab carapace width (mm)")+
-   theme(text = element_text(size=20))+
-  xlim(0,27)
-
-expression(Shoot~density~(no.~m^-2))
-expression(Seagrass~biomass~(g.~m^-2))
-expression(Sea~otter~density~(ind.~km^-2))
+#Figure axis titles to copy and paste:
+#expression(Shoot~density~(no.~m^-2))
+#expression(Seagrass~biomass~(g.~m^-2))
+#expression(Sea~otter~density~(ind.~km^-2))
 
 #C. magister==================================================
 d.size <- ggplot(data = crab_dun, aes(x = eg_shoot_msq, y= carapace_width_mm))+
@@ -140,6 +135,14 @@ r.size <- ggplot(data = crab_red, aes(x = eg_shoot_msq, y= carapace_width_mm))+
                       method.args = list(family = gaussian(link = 'log')))+
   #labs(x=expression(Shoot~density~(no.~m^-2)), y= "Carapace width (mm)", title=expression(~"C)"))+
     theme(text = element_text(size=20), axis.title = element_blank())
+
+ggplot(data = crab_red, aes(x = otter_presence, y= carapace_width_mm))+
+  geom_boxplot() +
+  theme_classic()+
+  geom_smooth(method = "glm", formula = y~x,
+                      method.args = list(family = gaussian(link = 'log')))+
+  #labs(x=expression(Shoot~density~(no.~m^-2)), y= "Carapace width (mm)", title=expression(~"C)"))+
+    theme(text = element_text(size=20), axis.title = element_blank())
 #T. cheiragonus======================================================
 h.size <- ggplot(data = crab_hel, aes(x = eg_shoot_msq, y= carapace_width_mm))+
   geom_point() +
@@ -158,34 +161,6 @@ h.size
 size.shoot <- gridExtra::grid.arrange(d.size, g.size, r.size, h.size,  ncol=1, nrow = 4)
 
 annotate_figure(size.shoot, bottom = text_grob(expression(Shoot~density~(no.~m^-2)), size = 20),left = text_grob("Carapace width (mm)", rot=90, size = 20))
-```
-
-#Data visualization with sqrt data, size~ sg shoot
-```{r}
-#C. magister==================================================
-ggplot(data = crab_dun, aes(x = sqrt(eg_shoot_msq), y= sqrt(carapace_width_mm)))+
-  geom_point() +
- geom_smooth(method = "gaussian", formula = y~x)+
-  labs(x= "Shoot Density", y= "Carapace Width (mm)", title=expression(paste(italic("C. magister"))))+
-  theme(text = element_text(size=15))
-#M. gracilis =====================================================
-ggplot(data = crab_gra, aes(x = sqrt(eg_shoot_msq), y= sqrt(carapace_width_mm)))+
-  geom_point() +
-  geom_smooth(method = "gaussian", formula = y~x)+
-  labs(x= "Shoot Density", y= "Biomass", title=expression(paste(italic("M. gracilis"))))+
-  theme(text = element_text(size=15))
-#C. productus=====================================================
-ggplot(data = crab_red, aes(x = sqrt(eg_shoot_msq), y= sqrt(carapace_width_mm)))+
-  geom_point() +
-  geom_smooth(method = "gaussian", formula = y~x)+
-  labs(x= "Shoot Density", y= "Biomass", title=expression(paste(italic("C. productus"))))+
-  theme(text = element_text(size=15))
-#T. cheiragonus======================================================
-ggplot(data = crab_hel, aes(x = sqrt(eg_shoot_msq), y= sqrt(carapace_width_mm)))+
-  geom_point() +
-  geom_smooth(method = "gaussian", formula = y~x)+
-  labs(x= "Shoot Density", y= "Biomass", title=expression(paste(italic("T. cheiragonus"))))+
-  theme(text = element_text(size=15))
 ```
 
 #Data analysis
@@ -269,7 +244,7 @@ summary(gra10)
 
 #Create list of models
 gra_models <- list(gra1,gra2,gra3,gra4,gra5,gra6,gra7,gra8,gra9,gra10)
-names(gra_models) <- c("~sea otter density + shoot density + year", "~sea otter_presence + year", "~sea otter density + shoot density", "~shoot density + year", "~sea otter density", "~shoot density", "~year", "~sea otter density*shoot density", "~sea otter density*year", "~shoot density*year" )
+names(gra_models) <- c("~sea otter presence + shoot density + year", "~sea otter_presence + year", "~sea otter presence + shoot density", "~shoot density + year", "~sea otter presence", "~shoot density", "~year", "~sea otter presence*shoot density", "~sea otter presence*year", "~shoot density*year" )
 #Calculate AICc
 library(MuMIn)
 AICc(gra1);AICc(gra2);AICc(gra3);AICc(gra4);AICc(gra5);AICc(gra6);AICc(gra7);AICc(gra8);AICc(gra9);AICc(gra10)
@@ -314,7 +289,7 @@ summary(red10)
 
 #Create list of models
 red_models <- list(red1,red2,red3,red4,red5,red6,red7,red8,red9,red10)
-names(red_models) <- c("~sea otter density + shoot density + year", "~sea otter_presence + year", "~sea otter density + shoot density", "~shoot density + year", "~sea otter density", "~shoot density", "~year", "~sea otter density*shoot density", "~sea otter density*year", "~shoot density*year" )
+names(red_models) <- c("~sea otter presence + shoot density + year", "~sea otter_presence + year", "~sea otter presence + shoot density", "~shoot density + year", "~sea otter presence", "~shoot density", "~year", "~sea otter presence*shoot density", "~sea otter presence*year", "~shoot density*year" )
 #Calculate AICc
 library(MuMIn)
 AICc(red1);AICc(red2);AICc(red3);AICc(red4);AICc(red5);AICc(red6);AICc(red7);AICc(red8);AICc(red9);AICc(red10)
@@ -359,7 +334,7 @@ summary(hel10)
 
 #Create list of models
 hel_models <- list(hel1,hel2,hel3,hel4,hel5,hel6,hel7,hel8,hel9,hel10)
-names(hel_models) <- c("~sea otter density + shoot density + year", "~sea otter_presence + year", "~sea otter density + shoot density", "~shoot density + year", "~sea otter density", "~shoot density", "~year", "~sea otter density*shoot density", "~sea otter density*year", "~shoot density*year" )
+names(hel_models) <- c("~sea otter presence + shoot density + year", "~sea otter_presence + year", "~sea otter presence + shoot density", "~shoot density + year", "~sea otter presence", "~shoot density", "~year", "~sea otter presence*shoot density", "~sea otter presence*year", "~shoot density*year" )
 #Calculate AICc
 library(MuMIn)
 AICc(hel1);AICc(hel2);AICc(hel3);AICc(hel4);AICc(hel5);AICc(hel6);AICc(hel7);AICc(hel8);AICc(hel9);AICc(hel10)
@@ -369,88 +344,59 @@ aictab(hel_models, modnames = names(hel_models),
 second.ord = TRUE, nobs = NULL, sort = TRUE)
 ```
 
-#Visreg plots for all species and predictor variables
+#Plots for all species and predictor variables
 ```{r}
-#visreg dung
-fig.dun1 <- visreg(dun10, "eg_shoot_msq", by="year", band= TRUE, scale = "response", gg = TRUE, rug=FALSE)+
-   geom_point(data = crab_dun, aes(eg_shoot_msq, carapace_width_mm))+
-   theme_classic()+
-  labs(x= expression(Sea~otter~density~(ind.~km^-2)), y= "Crab size", title=expression("A)"))+
- theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())
+#Figures for C. magister
+# model 9 : size ~ otter presence
 
-fig.dun1
- 
-fig.dun2 <- visreg(dun10, "year", band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
-  geom_point(data = crab_dun, aes(year, carapace_width_mm))+
-   theme_classic()+
-  labs(x= expression(Seagrass~biomass~(g.~m^-2)), y= "Crab size", title=expression("B)"))+
-  theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())+
-  ylim(0,200)+
-  xlim(0,250)
-#visreg slender
-fig.gra1 <- visreg(gra9, "otter_density", band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
-   geom_point(data = crab_gra, aes(otter_density, carapace_width_mm))+
-   theme_classic()+
-  labs(x= expression(Sea~otter~density~(ind.~km^-2)), y= "Crab size", title=expression("C)"))+
-  theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())+
-  ylim(0,200)+
-  xlim(0,30)
+#1 visreg otter presence
+visreg(dun5, "otter_presence", gg = TRUE, band= TRUE, scale = "response", rug=FALSE)+
+  labs(x= expression(Sea~otter~presence), y= "Carapace width (mm)", title=expression(italic("C. magister")))+
+  theme_Publication()
 
-fig.gra2 <- visreg(gra9, "eg_mass_msq", band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
-   geom_point(data = crab_gra, aes(eg_mass_msq, carapace_width_mm))+
-   theme_classic()+
-  labs(x= expression(Seagrass~biomass~(g.~m^-2)), y= "Crab abundance", title=expression("D)"))+
-  theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())+
-  ylim(0,200)+
-  xlim(0,250)
+#ggplot otter presence
+ggplot(data = crab_dun)+
+  geom_boxplot(aes(x = otter_presence, y = carapace_width_mm), show.legend = FALSE)+
+  labs(x= expression(Sea~otter~presence), y= "Carapace width (mm)", title=expression(italic("C. magister")))+
+  theme_Publication()
 
-#visreg red rock
-fig.red1 <- visreg(red10, "otter_density", band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
-  geom_point(data = crab_red, aes(otter_density, carapace_width_mm))+
-   theme_classic()+
-  labs(x= expression(Sea~otter~density~(ind.~km^-2)), y= "Crab size", title=expression("E)"))+
- theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())+
-  ylim(0,200)+
-  xlim(0,30)
- 
-fig.red2 <- visreg(red10, "eg_mass_msq", band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
-  geom_point(data = crab_red, aes(eg_mass_msq, carapace_width_mm))+
-   theme_classic()+
-  labs(x= expression(Seagrass~biomass~(g.~m^-2)), y= "Crab size", title=expression("F)"))+
-  theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())+
-  ylim(0,200)+
-  xlim(0,250)
- 
-fig.red3 <- visreg(red10, "eg_shoot_msq", band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
-   geom_point(data = crab_red, aes(eg_shoot_msq, carapace_width_mm))+
-   theme_classic()+
-  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab size", title=expression("G)"))+
-  theme(text = element_text(size=20), axis.title.y = element_blank(), axis.title.x = element_blank())+
-  ylim(0,200)
+#Figure for C. gracilis
+#model 1 : size ~ otter + shoot density + year
+#1 otter presence, can I add points to this?
+visreg(gra1, "otter_presence", partial = FALSE, band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
+   labs(x= expression(Sea~otter~presence), y= "Carapace width (mm)", title=expression(italic("C. gracilis")))+
+  theme_Publication()
 
-#visreg helmet
-fig.hel1 <- visreg(hel8, "otter_density", band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
-   geom_point(data = crab_hel, aes(otter_density, carapace_width_mm))+
-   theme_classic()+
-  labs(x= expression(Sea~otter~density~(ind.~km^-2)), y= "Crab size", title=expression("H)"))+
-  theme(text = element_text(size=20), axis.title.y = element_blank())+
-  ylim(0,200)+
-  xlim(0,30)
- 
-fig.hel2 <- visreg(hel8, "eg_shoot_msq", band= TRUE, scale="response", gg = TRUE,rug=FALSE)+
-   geom_point(data = crab_hel, aes(eg_shoot_msq, carapace_width_mm))+
-   theme_classic()+
-  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Crab size", title=expression("I)"))+
-  theme(text = element_text(size=20), axis.title.y = element_blank())+
-  ylim(0,200)
+#2 shoot density
+visreg(gra1, "eg_shoot_msq", band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
+   geom_jitter(data = crab_gra, aes(eg_shoot_msq, carapace_width_mm))+
+   theme_Publication()+
+  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Carapace width (mm)", title=expression(italic("C. gracilis")))
 
-fake.fig <- visreg(red10, "eg_shoot_msq", band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
-   geom_point(data = crab_hel, aes(eg_shoot_msq, carapace_width_mm))+
-   theme_classic()+
-  labs(x= expression(Seagrass~biomass~(g.~m^-2)), y= "Crab size", title=expression("F)"))+
-  theme(text = element_text(size=20), axis.title.y = element_blank())+
-  ylim(0,200)
+#3 year
+visreg(gra1, "year", partial = FALSE, band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
+   labs(x= expression(Year), y= "Carapace width (mm)", title=expression(italic("C. gracilis")))+
+  theme_Publication()
 
+#figure for C. productus
+visreg(red9, "otter_presence", by="year", band= TRUE, scale = "response", gg = TRUE, rug=FALSE)
+
+ggplot(data = crab_red)+
+  geom_boxplot(aes(x = otter_presence, y = carapace_width_mm, fill = year), show.legend = FALSE)+
+  labs(x= expression(Sea~otter~presence), y= "Carapace width (mm)", title=expression(italic("C. productus")))+
+  facet_grid(. ~ year)+
+  scale_fill_viridis_d()+
+  theme_Publication()
+
+#figure for T. cheiragonus
+visreg(hel9, "otter_presence", by="year", band= TRUE, scale = "response", gg = TRUE, rug=FALSE)
+
+ggplot(data = crab_hel)+
+  geom_boxplot(aes(x = otter_presence, y = carapace_width_mm, fill = year), show.legend = FALSE)+
+  labs(x= expression(Sea~otter~presence), y= "Carapace width (mm)", title=expression(italic("T. cheiragonus")))+
+  facet_grid(. ~ year)+
+  scale_fill_viridis_d()+
+  theme_Publication()
 
 ```
 
