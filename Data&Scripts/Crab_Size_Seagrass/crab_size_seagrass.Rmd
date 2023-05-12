@@ -35,6 +35,7 @@ library(tidyverse)
 library(gridExtra)
 library(ggthemes)
 library(quotidieR)
+library(wesanderson)
 ```
 
 #Read in crab, otter, and shoot density data
@@ -355,52 +356,84 @@ visreg(dun5, "otter_presence", gg = TRUE, band= TRUE, scale = "response", rug=FA
   theme_Publication()
 
 #ggplot otter presence
-ggplot(data = crab_dun)+
-  geom_boxplot(aes(x = otter_presence, y = carapace_width_mm), show.legend = FALSE)+
+crab_dun %>% 
+ggplot(aes(x = otter_presence, y = carapace_width_mm, fill = otter_presence))+
+  geom_boxplot()+
+  scale_fill_brewer(palette="Dark2")+
+  geom_jitter(color="black", size=0.4, alpha=0.9) +
   labs(x= expression(Sea~otter~presence), y= "Carapace width (mm)", title=expression(italic("C. magister")))+
-  theme_Publication()
+  theme_classic()+
+  theme(text = element_text(size = 20), legend.position = 'none')
+  
 
 #Figure for C. gracilis
 #model 1 : size ~ otter + shoot density + year
-#1 otter presence, can I add points to this?
+#1 otter presence
 visreg(gra1, "otter_presence", partial = FALSE, band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
    labs(x= expression(Sea~otter~presence), y= "Carapace width (mm)", title=expression(italic("C. gracilis")))+
   theme_Publication()
 
+crab_gra %>% 
+ggplot(aes(x = otter_presence, y = carapace_width_mm, fill = otter_presence))+
+  geom_boxplot()+
+  scale_fill_brewer(palette="Dark2")+
+  geom_jitter(color="black", size=0.4, alpha=0.9) +
+  labs(x= expression(Sea~otter~presence), y= "Carapace width (mm)", title=expression(italic("C. gracilis")))+
+  theme_classic()+
+  theme(text = element_text(size = 20), legend.position = 'none')
+  
 #2 shoot density
 visreg(gra1, "eg_shoot_msq", band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
-   geom_jitter(data = crab_gra, aes(eg_shoot_msq, carapace_width_mm))+
-   theme_Publication()+
-  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Carapace width (mm)", title=expression(italic("C. gracilis")))
+  geom_jitter(data = crab_gra, aes(eg_shoot_msq, carapace_width_mm))+
+  scale_fill_brewer(palette="Dark2")+
+  theme_classic()+
+  labs(x= expression(Shoot~density~(no.~m^-2)), y= "Carapace width (mm)", title=expression(italic("C. gracilis")))+
+  theme(text = element_text(size = 20), legend.position = 'none')
 
 #3 year
 visreg(gra1, "year", partial = FALSE, band= TRUE, scale="response", gg = TRUE, rug=FALSE)+
    labs(x= expression(Year), y= "Carapace width (mm)", title=expression(italic("C. gracilis")))+
   theme_Publication()
 
+crab_gra %>% 
+ggplot(aes(x = year, y = carapace_width_mm, fill = year))+
+  geom_boxplot()+
+  scale_fill_brewer(palette="Dark2")+
+  geom_jitter(color="black", size=0.4, alpha=0.9) +
+  labs(x= expression(Year), y= "Carapace width (mm)", title=expression(italic("C. gracilis")))+
+  theme_classic()+
+  theme(text = element_text(size = 20), legend.position = 'none')
+  
+
 #figure for C. productus
 visreg(red9, "otter_presence", by="year", band= TRUE, scale = "response", gg = TRUE, rug=FALSE)
 
-ggplot(data = crab_red)+
-  geom_boxplot(aes(x = otter_presence, y = carapace_width_mm, fill = year), show.legend = FALSE)+
+crab_red %>% 
+ggplot(aes(x = otter_presence, y = carapace_width_mm, fill = year))+
+  geom_boxplot()+
+  scale_fill_brewer(palette="Dark2")+
+  geom_jitter(color="black", size=0.4, alpha=0.9) +
   labs(x= expression(Sea~otter~presence), y= "Carapace width (mm)", title=expression(italic("C. productus")))+
-  facet_grid(. ~ year)+
-  scale_fill_viridis_d()+
-  theme_Publication()
+  theme_classic()+
+  theme(text = element_text(size = 20), legend.position = 'none')+
+  facet_wrap(~year, ncol = 4)
 
 #figure for T. cheiragonus
 visreg(hel9, "otter_presence", by="year", band= TRUE, scale = "response", gg = TRUE, rug=FALSE)
 
-ggplot(data = crab_hel)+
-  geom_boxplot(aes(x = otter_presence, y = carapace_width_mm, fill = year), show.legend = FALSE)+
+crab_hel %>% 
+ggplot(aes(x = otter_presence, y = carapace_width_mm, fill = year))+
+  geom_boxplot()+
+  scale_fill_brewer(palette="Dark2")+
+  geom_jitter(color="black", size=0.4, alpha=0.9) +
   labs(x= expression(Sea~otter~presence), y= "Carapace width (mm)", title=expression(italic("T. cheiragonus")))+
-  facet_grid(. ~ year)+
-  scale_fill_viridis_d()+
-  theme_Publication()
+  theme_classic()+
+  theme(text = element_text(size = 20), legend.position = 'none')+
+  facet_wrap(~year, ncol = 4)
 
 ```
 
-#arrange visreg plots
+#arrange plots
 ```{r}
 vis.dun <- gridExtra::grid.arrange(fig.dun1, fig.dun2, ncol=3, nrow = 1)
 vis.gra <- gridExtra::grid.arrange(fig.gra1,fig.gra2, ncol=3, nrow = 1)
