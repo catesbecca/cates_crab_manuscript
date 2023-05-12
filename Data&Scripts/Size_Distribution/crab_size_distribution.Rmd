@@ -50,11 +50,10 @@ library(car)
 #Read in data
 ```{r}
 #Crab size data
-crab_size <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/clean_crab_otter_size_data_all_years.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
+crab_size <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Size_Distribution/crabsize_otterdensity_data.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
 
 #Sea otter density data
-otter <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Otter_density_site_allyears.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
-
+otter <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Size_Distribution/otter_density.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
 ```
 
 #Check for data errors
@@ -64,10 +63,9 @@ summary(crab_size)
 unique(crab_size$sec_key)
 
 #looks good
-
 ```
 
-#Filter sea otter df for columns and rows we need
+#Filter sea otter and crab size df for columns we need
 ```{r}
 otter <- 
   otter %>% 
@@ -76,8 +74,6 @@ otter <-
 crab_size<-
   crab_size %>% 
   dplyr::select(-c(otter_density))
-
-
 ```
 
 #Join otter and crab dataframes by sec_key
