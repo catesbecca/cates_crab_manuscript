@@ -15,7 +15,7 @@ In addition, sea otter density data and seagrass biometric data was collected at
 Goal of this script :
 1) Check for errors in data
 2) Check for accuracy of data type and fix if needed (e.g., factor, numeric, character)
-3) Analyze crab biomAA, sea otter, and habitat data for all species
+3) Analyze crab biomass, sea otter, and habitat data for all species
 4) Visualize data
 
 ```{r setup, include=FALSE}
@@ -61,10 +61,10 @@ crab <-
 #Create effort column analysis
 ```{r}
 crab$effort <- NA
-crab$effort[crab$year == 17]  = 3
-crab$effort[crab$year == 18]  = 4
-crab$effort[crab$year == 19]  = 4
-crab$effort[crab$year == 20]  = 3
+crab$effort[crab$year == 2017]  = 3
+crab$effort[crab$year == 2018]  = 4
+crab$effort[crab$year == 2019]  = 4
+crab$effort[crab$year == 2020]  = 3
 ```
 
 #Calculate m2 shoot-density, and join with crab biomass df
@@ -114,11 +114,11 @@ crab_hel <-
 ```{r}
 crab_dun <-
   crab_dun %>% 
-  filter(year %in% c("19", "20"))
+  filter(year %in% c("2019", "2020"))
 
 crab_gra <-
   crab_gra %>% 
-  filter(year %in% c("19", "20"))
+  filter(year %in% c("2019", "2020"))
 ```
 
 #Create Biomass per unit effort column, bpue
@@ -181,6 +181,7 @@ crab_hel$bio_round <- as.integer(crab_hel$bio_round)
 
 str(crab_dun)
 ```
+
 #Corrgram for independent variables
 ```{r}
 #correlations
@@ -345,7 +346,7 @@ second.ord = TRUE, nobs = NULL, sort = TRUE)
 #M. gracilis
 ```{r}
 #Run zero inflated GLMs
-gra1 <- glm.nb(bio_round ~ otter_density + eg_shoot_msq + eg_mass_msq + log(offset(effort)), data = crab_gra)
+gra1 <- glm.nb(bio_round ~ otter_density + eg_shoot_msq  + log(offset(effort)), data = crab_gra)
 summary(gra1)
 
 gra2 <- glm.nb(bio_round ~ otter_density  + eg_mass_msq + log(offset(effort)), data = crab_gra)
