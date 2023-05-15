@@ -94,7 +94,9 @@ crab_hel <-
 
 ```
 
-#Filter years for C. magister and M. gracilis, MUTED
+# Filter for species from df
+# Filter out 2017, 2018 data due to size discrepency, for C.magister and C.gracilis
+# Filter out 2018, 2019 data for T. Cheiragonus because no crabs were caught at sites without sea otters, can't do a comparison
 ```{r}
 crab_dun <-
  crab_dun %>% 
@@ -103,6 +105,10 @@ crab_dun <-
 crab_gra <-
   crab_gra %>% 
   filter(year %in% c("2019", "2020"))
+
+crab_hel <-
+  crab_hel %>% 
+  filter(year %in% c("2017", "2020"))
 ```
 
 #Data visualization with untransformed data, size ~ sg shoot

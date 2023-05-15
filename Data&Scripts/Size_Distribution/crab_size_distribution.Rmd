@@ -50,7 +50,7 @@ library(car)
 #Read in data
 ```{r}
 #Crab size data
-crab_size <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Size_Distribution/crabsize_otterdensity_data.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
+crab_size <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Crab_Size_Seagrass/crabsize_otterdensity_data.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
 
 #Sea otter density data
 otter <- read.csv("https://raw.githubusercontent.com/catesbecca/cates_crab_manuscript/main/Data%26Scripts/Size_Distribution/otter_density.csv", header = TRUE, stringsAsFactors = FALSE, na.strings=c("","NA"))
@@ -99,11 +99,11 @@ crab$so_presence <- as.factor(crab$so_presence)
 #Create year column
 ```{r}
 #year based off of sec_key identifier
-crab$year<- NA
-crab$year[1:120] <- 2020
-crab$year[121:381] <- 2017
-crab$year[382:490] <- 2018
-crab$year[491:754] <- 2019
+#crab$year<- NA
+#crab$year[1:120] <- 2020
+#crab$year[121:381] <- 2017
+#crab$year[382:490] <- 2018
+#crab$year[491:754] <- 2019
 
 crab$year <- as.factor(crab$year)
 ```
@@ -274,7 +274,6 @@ table(crab_hel$so_presence) #absent=3, present = 52
 
 #Two way ANOVA stats and Tukey Kramer post hoc
 ```{r}
-
 #Shapiro Wilk
 shapiro.test(crab_dun$carapace_width_mm)
 shapiro.test(crab_gra$carapace_width_mm)
